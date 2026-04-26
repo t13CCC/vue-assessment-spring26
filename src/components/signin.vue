@@ -90,7 +90,7 @@
 
 </script>
 
-<style>
+<style lang="scss" scoped>
 *{
   padding: 0%;
   margin: 0%;
