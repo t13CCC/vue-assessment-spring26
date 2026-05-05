@@ -36,10 +36,13 @@
         </div>
         <div class="section4"></div>
     </div>
+    <Signin class="Signin"></Signin>
+    
 </template>
 
 <script setup>
 import { reactive, ref } from 'vue';
+import Signin from './signin.vue';
 
 //基本信息
 let user = reactive({
@@ -156,4 +159,13 @@ h1{
     flex:none;
 }
 
+.Signin{
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 400px;
+    background: transparent;
+}
 </style>

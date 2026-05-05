@@ -4,21 +4,26 @@
             <p class="topP">--登录--</p>
         </div>
         <div class="section">
-            <div class="section1">  
+            <div class="section1">
                 <div class="message">
                     <div class="message1 username">
-                        <input class="messageInput" type="text" :placeholder="placeholderText" v-model="signinBack.username">
+                        <input class="messageInput" type="text" :placeholder="placeholderText"
+                            v-model="signinBack.username">
                     </div>
                     <div class="message1 password">
-                        <input class="messageInput" id="passwordInput" type="password" placeholder="请输入密码" v-model="signinBack.password">
+                        <input class="messageInput" id="passwordInput" type="password" placeholder="请输入密码/验证码"
+                            v-model="signinBack.password">
                     </div>
                 </div>
                 <div class="method">
-                    <span class="methodContent"><input type="radio" name="signinMethod" :value="1" v-model="signinBack.choice">手机号</span>
-                    <span class="methodContent"><input type="radio" name="signinMethod" :value="2" v-model="signinBack.choice">邮箱</span>
-                    
+                    <span class="methodContent"><input type="radio" name="signinMethod" :value="1"
+                            v-model="signinBack.choice">手机号</span>
+                    <span class="methodContent"><input type="radio" name="signinMethod" :value="2"
+                            v-model="signinBack.choice" :checked="signinBack.choice === 3">邮箱</span>
+                    <button class="btn-verify" :class="{ 'btn-verify-active': signinBack.choice === 3 }"
+                        @click="toggleVerifyMode">使用验证码登录</button>
                 </div>
-                <button class="btn1">登录</button>
+                <button class="btn1" @click="login">登录</button>
             </div>
             <div class="section2">
                 <div class="section2p">{{ signinBack.content }}</div>
@@ -26,141 +31,370 @@
             </div>
         </div>
     </div>
-    
+
 </template>
 
 <script setup>
-    import { reactive, ref, watchEffect } from 'vue';
+import { reactive, ref, watchEffect } from 'vue';
+import axios from 'axios';
 
-    //登录方式
-    let placeholderText = ref("")
-    //登录输入反馈
-    let signinBack = reactive({
-        img:"src/assets/banMa/IMG_4021.PNG",
-        content:"欢迎来到萌宠小镇！",
-        username:"",
-        password:"",
-        choice:0,
-        judge:true,
-        check(x){
-            if(x == 1){
-                if(this.username.length >= 11){
-                    this.judge = /^1[3-9]\d{9}$/.test(this.username);
-                }
-                else{
-                    this.judge = true;
-                }
+//登录方式
+let placeholderText = ref("")
+//登录输入反馈
+let signinBack = reactive({
+    img: "src/assets/banMa/IMG_4021.PNG",
+    content: "欢迎来到萌宠小镇！",
+    username: "",
+    password: "",
+    choice: 0,
+    judge: true,
+    verifyMode: false,
+    check(x) {
+        if (x == 1) {
+            if (this.username.length >= 11) {
+                this.judge = /^1[3-9]\d{9}$/.test(this.username);
             }
-            if(x == 2 && this.username.length >= 6){
-                this.judge = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(this.username);
-            }
-            if(x == 2 && this.username.length < 6){
+            else {
                 this.judge = true;
             }
-            
-
         }
-    })
-    watchEffect(() => {
-        signinBack.check(signinBack.choice);
-        if(signinBack.judge == false){
-            signinBack.content = "输入格式有误！"
-            signinBack.img="src/assets/banMa/IMG_3982.PNG"
+        if (x == 2 && this.username.length >= 6) {
+            this.judge = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(this.username);
         }
-        else{
-            signinBack.content = "欢迎来到萌宠小镇！"
-            signinBack.img="src/assets/banMa/IMG_4021.PNG";
+        if (x == 2 && this.username.length < 6) {
+            this.judge = true;
         }
 
-        if(signinBack.choice == 0 && signinBack.username.length){
-            signinBack.content = "选择登录方式！";
-            signinBack.img="src/assets/banMa/IMG_3974.PNG";
+
+    }
+})
+watchEffect(() => {
+    signinBack.check(signinBack.choice);
+    if (signinBack.judge == false) {
+        signinBack.content = "输入格式有误！"
+        signinBack.img = "src/assets/banMa/IMG_3982.PNG"
+    }
+    else {
+        signinBack.content = "欢迎来到萌宠小镇！"
+        signinBack.img = "src/assets/banMa/IMG_4021.PNG";
+    }
+
+    if (signinBack.choice == 0 && signinBack.username.length) {
+        signinBack.content = "选择登录方式！";
+        signinBack.img = "src/assets/banMa/IMG_3974.PNG";
+    }
+
+    // 如果选择手机号登录，取消验证码模式
+    if (signinBack.choice === 1) {
+        signinBack.verifyMode = false;
+    }
+
+    switch (signinBack.choice) {
+        case 1:
+            placeholderText.value = "请输入手机号"
+            break;
+        case 2:
+            placeholderText.value = "请输入邮箱"
+            break;
+        case 3:
+            placeholderText.value = "请输入邮箱"
+            break;
+        default:
+            placeholderText.value = "请选择登录方式"
+    }
+})
+
+//邮箱密码登录
+async function emailLogin() {
+    try {
+        const response = await axios.post('/api/auth/login/email', {
+            email: signinBack.username,
+            password: signinBack.password
+        });
+        // 处理登录成功的响应
+        console.log(response.data);
+        const status = response?.status;
+        if (status == 200) {
+            alert("登录成功！");
         }
-        switch(signinBack.choice){
-            case 1:
-                placeholderText.value = "请输入手机号"
+        else {
+            alert("请先去注册");
+        }
+    } catch (error) {
+        // 处理登录失败的响应
+        const status = error.response?.status;
+        switch (status) {
+            case 400:
+                alert("参数错误，请检查输入");
                 break;
-            case 2:
-                placeholderText.value = "请输入邮箱"
+            case 401:
+                alert("邮箱或密码错误");
+                break;
+            case 403:
+                alert("账号被封禁，请联系管理员");
+                break;
+            case 404:
+                alert("接口地址错误");
                 break;
             default:
-                placeholderText.value = "请选择登录方式"
+                alert("登录失败，请稍后再试");
+                console.error(error);
         }
-    })
+    }
+}
+// 发送验证码
+async function sendVerifyCode() {
+    try {
+        const response = await axios.post('/api/auth/login/email/code/send', {
+            email: signinBack.username
+        });
+        const status = response?.status;
+        if (status == 200) {
+            alert("验证码已发送到您的邮箱，请查收！");
+        } else {
+            alert("验证码发送失败，请稍后重试");
+        }
+    } catch (error) {
+        const status = error.response?.status;
+        switch (status) {
+            case 400:
+                alert("邮箱格式错误，请检查输入");
+                break;
+            case 404:
+                alert("邮箱未注册，请先注册");
+                break;
+            default:
+                alert("验证码发送失败，请稍后重试");
+                console.error(error);
+        }
+    }
+}
 
+// 切换验证码登录模式
+function toggleVerifyMode() {
+    if (signinBack.choice === 3) {
+        // 取消验证码登录，切换到邮箱密码登录
+        signinBack.choice = 2;
+        signinBack.verifyMode = false;
+    } else {
+        // 启用验证码登录，自动勾选邮箱登录
+        signinBack.choice = 3;
+        signinBack.verifyMode = true;
+
+        // 检查邮箱格式，如果正确则发送验证码
+        if (signinBack.username && /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(signinBack.username)) {
+            sendVerifyCode();
+        } else {
+            alert("请输入正确的邮箱地址以发送验证码");
+        }
+    }
+}
+
+//手机号密码登录
+async function phoneLogin() {
+    try {
+        const response = await axios.post('/api/auth/login/phone', {
+            phone: signinBack.username,
+            password: signinBack.password
+        });
+        // 处理登录成功的响应
+        console.log(response.data);
+        const status = response?.status;
+        if (status == 200) {
+            alert("登录成功！");
+        }
+        else {
+            alert("请先去注册");
+        }
+    } catch (error) {
+        // 处理登录失败的响应
+        const status = error.response?.status;
+        switch (status) {
+            case 400:
+                alert("参数错误，请检查输入");
+                break;
+            case 401:
+                alert("手机号或密码错误");
+                break;
+            case 403:
+                alert("账号被封禁，请联系管理员");
+                break;
+            case 404:
+                alert("接口地址错误");
+                break;
+            default:
+                alert("登录失败，请稍后再试");
+                console.error(error);
+        }
+    }
+}
+
+//邮箱验证码登录
+async function emailVerifyLogin() {
+    try {
+        const response = await axios.post('/api/auth/login/email/code', {
+            email: signinBack.username,
+            code: signinBack.password
+        });
+        // 处理登录成功的响应
+        console.log(response.data);
+        const status = response?.status;
+        if (status == 200) {
+            alert("登录成功！");
+        }
+        else {
+            alert("请先去注册");
+        }
+    } catch (error) {
+        // 处理登录失败的响应
+        const status = error.response?.status;
+        switch (status) {
+            case 400:
+                alert("参数错误，请检查输入");
+                break;
+            case 401:
+                alert("验证码错误或已过期");
+                break;
+            case 403:
+                alert("账号被封禁，请联系管理员");
+                break;
+            case 404:
+                alert("接口地址错误");
+                break;
+            default:
+                alert("登录失败，请稍后再试");
+                console.error(error);
+        }
+    }
+}
+
+function login() {
+    if (signinBack.choice == 1) {
+        phoneLogin();
+    }
+    else if (signinBack.choice == 2) {
+        emailLogin();
+    }
+    else if (signinBack.choice == 3) {
+        emailVerifyLogin();
+    }
+}
 </script>
 
 <style lang="scss" scoped>
-*{
-  padding: 0%;
-  margin: 0%;
-  overflow: hidden;
+* {
+    padding: 0%;
+    margin: 0%;
 }
 
-.icon1{
+.icon1 {
     width: 20px;
 }
-.btn1{
+
+.btn1 {
     width: 80px;
     height: 30px;
-    background-color:#c0deff;
+    background-color: #c0deff;
     border: solid #71b8ff 1px;
     border-radius: 6px;
     margin: 10px 0 0 140px;
     color: rgb(99, 99, 99);
     transition: 0.1s;
 }
-.btn1:hover{
-    background-color:hsl(210, 100%, 80%) ;
-    
+
+.btn1:hover {
+    background-color: hsl(210, 100%, 80%);
+
 }
+
 .btn1:active {
     transform: scale(0.95);
     background: hsl(210, 100%, 80%);
 }
+
+/* 验证码登录按钮样式 */
+.btn-verify {
+    width: 120px;
+    height: 30px;
+    background: linear-gradient(to right, #65A3F0, #88c1ff);
+    border: none;
+    border-radius: 6px;
+    margin-left: 20px;
+    margin-top: -2px;
+    color: white;
+    font-size: 13px;
+    font-weight: 300;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    box-shadow: 0 2px 4px rgba(101, 163, 240, 0.3);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-verify:hover {
+    background: linear-gradient(to right, #4a8fe0, #65A3F0);
+    box-shadow: 0 4px 8px rgba(101, 163, 240, 0.4);
+}
+
+.btn-verify-active {
+    background: linear-gradient(to right, #357bd8, #4a8fe0) !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    transform: scale(0.98) !important;
+}
+
+.btn-verify-active:hover {
+    background: linear-gradient(to right, #2c6bc7, #357bd8) !important;
+}
+
 .window {
-    margin: 100px;
     width: 600px;
     height: 400px;
     border-radius: 20px;
     display: flex;
-    flex: 1;
     flex-direction: column;
-    box-shadow: 0px 4px 10px 1px #b6ceec;
+    box-shadow: 0px 4px 15px 4px #81a3cc;
     transition: 0.3s;
 }
-.window:hover{
-    box-shadow: 0px 4px 15px 4px #b6ceec;
+
+.window:hover {
+    box-shadow: 0px 4px 28px 5px #7191b9;
 }
-.section{
+
+.section {
     display: flex;
-    flex: 1;
     justify-content: space-between;
-    background: rgba(200, 222, 255, 0.15);
-    backdrop-filter: blur(10px);
+    background: rgba(215, 231, 255, 0.726);
+    backdrop-filter: blur(5px);
 }
-.section1{
+
+.section1 {
     display: flex;
     flex-direction: column;
 
 }
-.section2{
+
+.section2 {
     display: flex;
-    flex: 1;
     flex-direction: column;
     padding: 30px 0;
 }
+
 .top {
     height: 55px;
-    background: linear-gradient(to right, #65A3F0,#FDCBE6);
+    background: linear-gradient(to right, #65A3F0, #FDCBE6);
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.topP{
+
+.topP {
     font: 599 20px SimHei;
     color: white;
 }
+
 .messageInput {
     width: 250px;
     height: 30px;
@@ -169,14 +403,16 @@
     outline: none;
     padding-left: 10px;
     border: solid 2px #A5CAF1;
-    background: linear-gradient(to right, #e7f2ff,#A5CAF1);
+    background: linear-gradient(to right, #e7f2ff, #A5CAF1);
 }
-#passwordInput{
+
+#passwordInput {
     border: solid 2px #FDCBE6;
     outline: none;
-    background: linear-gradient(to right, #FFEDF5,#FDCBE6);
+    background: linear-gradient(to right, #FFEDF5, #FDCBE6);
 }
-#passwordInput:focus{
+
+#passwordInput:focus {
     border-color: #ffa5d5;
 }
 
@@ -196,22 +432,27 @@
 .message1 {
     margin: 30px 0 30px 30px;
 }
-.passwordShow{
-    margin:10px;
+
+.passwordShow {
+    margin: 10px;
 }
-.method{
+
+.method {
     display: flex;
     margin: 20px 0 20px 30px;
     justify-content: space-around;
 }
-.methodContent{
+
+.methodContent {
     color: #636262;
 }
-.img1{
+
+.img1 {
     width: 200px;
     height: 200px;
 }
-.section2p{
+
+.section2p {
     background-color: #FFEDF5;
     width: 120px;
     height: 60px;
@@ -219,7 +460,7 @@
     margin: 0px 20px 0 auto;
     border: solid 2px #FDCBE6;
     color: #797979;
-    font: 13px bold "Microsoft YaHei" ;
+    font: 13px bold "Microsoft YaHei";
     display: flex;
     align-items: center;
     justify-content: center;
