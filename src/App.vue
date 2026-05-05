@@ -1,18 +1,24 @@
 <template>
-    <Signin/>
+    <div id="app">
+        <router-view></router-view>
+    </div>
+    <Register/>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import Register from './components/register.vue';
 
-
-import Signin from './components/signin.vue';
-import EditProfile from './components/EditProfile.vue';
+// 路由组件已在 router.js 中注册，无需在此导入
 </script>
 
 <style lang="scss">
-*{
-  padding: 0%;
-  margin: 0%;
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 </style>

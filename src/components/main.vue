@@ -1,12 +1,19 @@
 <template>
     <div class="window">
         <div class="section1">
-            <div class="information">
+            <div 
+                class="information" 
+                @click="goToEditProfile"
+                @focus="showEditProfile = true"
+                tabindex="0"
+            >
                 <img :src="user.avator" alt="" class="avator">
                 <div class="username">
                     {{ user.name }}
                 </div>
+                <span class="edit-icon">✏️</span>
             </div>
+            <EditProfile v-show="showEditProfile" @close="showEditProfile = false" />
         </div>
         <div class="section2">
             <h1>萌宠小镇</h1>
@@ -19,14 +26,14 @@
                     <img class="img1 zebra" src="/src/assets/banMa/IMG_3983.PNG" alt="">
                 </div>
             </div>
-            <div class="adopt choice">
+            <div class="adopt choice" @click="goToAdoption">
                 <div class="top">-宠物领养-</div>
                 <div class="choiceContent">
                     <div class="contentp">发布领养信息或领养一只宠物！</div>
                     <img class="img2 zebra" src="/src/assets/banMa/IMG_4020.PNG" alt="">
                 </div>
             </div>
-            <div class="friend choice">
+            <div class="friend choice" @click="goToFriends">
                 <div class="top top2">-好友-</div>
                 <div class="choiceContent">
                     <div class="contentp">寻找相似的宠物爱好者！</div>
@@ -40,12 +47,30 @@
 
 <script setup>
 import { reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import EditProfile from './EditProfile.vue';
 
-//基本信息
+const router = useRouter();
+const showEditProfile = ref(false);
+
 let user = reactive({
-    name :"未设置用户名",
-    avator:"/src/assets/avator.png"
-})
+    name: "未设置用户名",
+    avator: "/src/assets/avator.png"
+});
+
+// 跳转到领养页面
+const goToAdoption = () => {
+    router.push('/adoption');
+};
+
+// 聚焦时显示编辑资料界面
+const goToEditProfile = () => {
+    showEditProfile.value = true;
+};
+
+const goToFriends = () => {
+    router.push('/friends');
+};
 </script>
 
 <style lang="scss" scoped>
@@ -57,18 +82,21 @@ let user = reactive({
     justify-content: space-between; 
     overflow: auto;
     flex-shrink: 0;
+    position: relative;
 }
 .section1{
-    height: 50px;
+    height: 60px;
     display: flex;
     align-items: center;
     background: linear-gradient(to right, #88c1ff,rgb(255, 255, 255),#ffc7e5);
     flex-shrink: 0;
+    position: relative;
+    z-index: 1;
 }
 .information{
-    height: 33px;
+    height: 40px;
     border:solid 2px #cae4ff;
-    border-radius: 10px;
+    border-radius: 18px;
     display: flex;
     align-items: center;
     padding: 0 10px;
@@ -77,24 +105,107 @@ let user = reactive({
         margin: 0 3px;
     }
     background-color: white;
+    cursor: pointer;
+    transition: all 0.3s;
+    outline: none;
+    
+    &:hover {
+        transform: scale(1.05);
+    }
+    
+    &:focus {
+        border-color: #65A3F0;
+        box-shadow: 0 0 0 3px rgba(101, 163, 240, 0.2);
+    }
+}
+
+.edit-icon {
+    font-size: 14px;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+    
+    .information:hover & {
+        opacity: 1;
+    }
 }
 .avator{
     width: 25px;
     border-radius: 100%;
 }
 .username{
-    color: #818181;
+    color: #777777;
     font-size: 14px;
 }
 
 
 .section2{
     display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 0;
+    position: relative;
 }
-h1{
-    font-size: 120px;
-    margin: 0 auto;
-    color: hsl(210, 81%, 75%);
+
+.section2::before {
+    content: '🐾';
+    position: absolute;
+    left: 10%;
+    font-size: 40px;
+    opacity: 0.6;
+    animation: float 3s ease-in-out infinite;
+}
+
+.section2::after {
+    content: '🐾';
+    position: absolute;
+    right: 10%;
+    font-size: 40px;
+    opacity: 0.6;
+    animation: float 3s ease-in-out infinite 1.5s;
+}
+
+h1 {
+    font-size: clamp(50px, 14vw, 120px);
+    margin: 0;
+    color: #ffffff;
+    font-weight: 700;
+    font-family: 'Microsoft YaHei', 'PingFang SC', 'KaiTi', serif;
+    letter-spacing: 15px;
+    position: relative;
+     text-shadow: 
+        3px 3px 0 #87bdff,
+        -1px -1px 0 #87bdff,
+        1px -1px 0 #87bdff,
+        -1px 1px 0 #87bdff,
+        2px 2px 10px rgba(101, 163, 240, 0.3);
+}
+
+h1::after {
+    content: '❤';
+    position: absolute;
+    top: -30px;
+    color: #ff89ca;
+    right: -50px;
+    font-size: 33px;
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+@keyframes heartbeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
 }
 
 .section3{
@@ -156,4 +267,9 @@ h1{
     flex:none;
 }
 
+.adopt, .friend {
+    &:hover {
+        transform: scale(1.02);
+    }
+}
 </style>
