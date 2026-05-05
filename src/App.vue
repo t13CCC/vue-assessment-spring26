@@ -1,19 +1,24 @@
 <template>
-    <file/>
+    <div id="app">
+        <router-view></router-view>
+    </div>
+    <Register/>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
-import axios from 'axios';
+import Register from './components/register.vue';
 
-import Main from './components/main.vue';
-import EditProfile from './components/EditProfile.vue';
-import File from './components/file.vue';
+// 路由组件已在 router.js 中注册，无需在此导入
 </script>
 
 <style lang="scss">
-*{
-  padding: 0%;
-  margin: 0%;
+* {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 </style>
