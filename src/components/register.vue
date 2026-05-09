@@ -235,10 +235,10 @@ h1 {
 
 #nav {
     display: flex;
-    position: fixed;
+    position: absolute;
     background: linear-gradient(to right, #88c1ff,rgb(255, 255, 255),#ffc7e5);
     width: 100%;
-    top: 0;
+
     left: 0;
     box-shadow: 0 1px 15px #efefef;
     margin: 0px;
