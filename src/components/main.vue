@@ -38,7 +38,10 @@
         </div>
         <div class="section4"></div>
     </div>
-    <Signin class="Signin"></Signin>
+    <Signin class="Signin" v-show="showSignin" @login-success="handleLoginSuccess"></Signin>
+
+    <!-- 登录遮罩层：登录前覆盖主页，禁止操作 -->
+    <div class="login-overlay" v-show="showSignin"></div>
 
 </template>
 
@@ -46,9 +49,11 @@
 import { reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import EditProfile from './EditProfile.vue';
+import Signin from './signin.vue';
 
 const router = useRouter();
 const showEditProfile = ref(false);
+const showSignin = ref(true); // 控制登录组件显示
 
 let user = reactive({
     name: "未设置用户名",
@@ -71,6 +76,11 @@ const goToFriends = () => {
 
 const goToFile = () => {
     router.push('/file');
+};
+
+// 登录成功后隐藏登录组件
+const handleLoginSuccess = () => {
+    showSignin.value = false;
 };
 </script>
 
@@ -294,5 +304,30 @@ h1::after {
     &:hover {
         transform: scale(1.02);
     }
+}
+
+.Signin {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 400px;
+    background: transparent;
+    z-index: 100;
+    /* 登录框在遮罩层上面 */
+}
+
+/* 登录遮罩层样式 */
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    /* 全透明遮罩 */
+    z-index: 50;
+    /* 遮罩层在主页上面，登录框下面 */
 }
 </style>

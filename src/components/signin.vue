@@ -40,6 +40,9 @@ import axios from 'axios';
 
 //登录方式
 let placeholderText = ref("")
+
+// 定义自定义事件，通知父组件登录成功
+const emit = defineEmits(['login-success']);
 //登录输入反馈
 let signinBack = reactive({
     img: "src/assets/banMa/IMG_4021.PNG",
@@ -107,7 +110,7 @@ watchEffect(() => {
 //邮箱密码登录
 async function emailLogin() {
     try {
-        const response = await axios.post('/api/auth/login/email', {
+        const response = await axios.post('http://127.0.0.1:4523/m1/8192503-7951847-default/api/auth/login/email', {
             email: signinBack.username,
             password: signinBack.password
         });
@@ -116,6 +119,12 @@ async function emailLogin() {
         const status = response?.status;
         if (status == 200) {
             alert("登录成功！");
+            // 保存 token 到 localStorage（假设后端返回 token）
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+            }
+            // 触发登录成功事件，通知父组件隐藏登录组件
+            emit('login-success');
         }
         else {
             alert("请先去注册");
@@ -202,6 +211,12 @@ async function phoneLogin() {
         const status = response?.status;
         if (status == 200) {
             alert("登录成功！");
+            // 保存 token 到 localStorage（假设后端返回 token）
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+            }
+            // 触发登录成功事件，通知父组件隐藏登录组件
+            emit('login-success');
         }
         else {
             alert("请先去注册");
@@ -241,6 +256,12 @@ async function emailVerifyLogin() {
         const status = response?.status;
         if (status == 200) {
             alert("登录成功！");
+            // 保存 token 到 localStorage（假设后端返回 token）
+            if (response.data.token) {
+                localStorage.setItem('token', response.data.token);
+            }
+            // 触发登录成功事件，通知父组件隐藏登录组件
+            emit('login-success');
         }
         else {
             alert("请先去注册");
@@ -365,6 +386,7 @@ function login() {
 
 .section {
     display: flex;
+    flex: 1;
     justify-content: space-between;
     background: rgba(215, 231, 255, 0.726);
     backdrop-filter: blur(5px);
