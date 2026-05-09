@@ -1,5 +1,6 @@
 <template>
     <div class="window">
+        <BirthdayWish :pets="pets" />
         <div class="section1">
             <div class="information" @click="goToEditProfile" @focus="showEditProfile = true" tabindex="0">
                 <img :src="user.avator" alt="" class="avator">
@@ -43,9 +44,10 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import EditProfile from './EditProfile.vue';
+import BirthdayWish from './BirthdayWish.vue';
 
 const router = useRouter();
 const showEditProfile = ref(false);
@@ -53,6 +55,54 @@ const showEditProfile = ref(false);
 let user = reactive({
     name: "未设置用户名",
     avator: "/src/assets/avator.png"
+});
+
+// 宠物数据（从localStorage获取或使用默认数据）
+const pets = ref([]);
+
+// 从localStorage加载宠物数据
+function loadPets() {
+    const storedPets = localStorage.getItem('pets');
+    if (storedPets) {
+        pets.value = JSON.parse(storedPets);
+    } else {
+        // 默认宠物数据（包含生日在今天的宠物用于测试）
+        const today = new Date();
+        const thisYear = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        
+        pets.value = [
+            {
+                id: 1,
+                name: 'Tommy',
+                type: '猫',
+                photo: '',
+                breed: '英短',
+                gender: '公',
+                weight: 4.5,
+                color: '蓝白',
+                birthday: `${thisYear - 5}-${month}-${day}`, // 今天5岁生日
+                tags: ['可爱', '粘人', '调皮']
+            },
+            {
+                id: 2,
+                name: 'Lucky',
+                type: '狗',
+                photo: '',
+                breed: '金毛',
+                gender: '母',
+                weight: 25,
+                color: '金黄色',
+                birthday: `${thisYear - 3}-${month}-${day}`, // 今天3岁生日
+                tags: ['温顺', '聪明', '忠诚']
+            }
+        ];
+    }
+}
+
+onMounted(() => {
+    loadPets();
 });
 
 // 跳转到领养页面
