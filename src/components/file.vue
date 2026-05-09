@@ -1,47 +1,47 @@
 <template>
-    <div class="pet-profile-container">
-        <header class="top">
-            <h1 class="top-title">-宠物档案管理-</h1>
+    <div class="adoption-page">
+        <header class="header">
+            <div class="header-left">
+                <button class="home-btn" @click="goToHome">🏠 返回首页</button>
+                <div class="logo">🐾 宠物档案</div>
+            </div>
+            <div class="header-right">
+                <button class="publish-btn" @click="openAddPetModal">+ 新建宠物档案</button>
+            </div>
         </header>
 
-        <main class="main-content">
-            <div class="action-buttons">
-                <button class="btn-primary" @click="openAddPetModal">+ 新建宠物档案</button>
-            </div>
-
-            <div class="pet-list" v-if="pets.length > 0">
-                <article class="pet-card" v-for="pet in pets" :key="pet.id">
-                    <div class="pet-card-header">
-                        <h3>{{ pet.name }}</h3>
-                        <div class="pet-card-actions">
-                            <button class="btn-secondary" @click="editPet(pet)">编辑</button>
-                            <button class="btn-danger" @click="deletePet(pet.id)">删除</button>
-                        </div>
+        <div class="adoption-list" v-if="pets.length > 0">
+            <div v-for="pet in pets" :key="pet.id" class="adoption-card">
+                <div class="card-image">
+                    <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" />
+                    <span v-else class="pet-image-placeholder">{{ pet.name.charAt(0) }}</span>
+                </div>
+                <div class="card-content">
+                    <h3 class="pet-name">{{ pet.name }}</h3>
+                    <div class="pet-info">
+                        <span class="tag">{{ pet.type }}</span>
+                        <span class="tag">{{ pet.breed }}</span>
                     </div>
-                    <div class="pet-card-body">
-                        <div class="pet-image">
-                            <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" />
-                            <span v-else class="pet-image-placeholder">{{ pet.name.charAt(0) }}</span>
-                        </div>
-                        <div class="pet-info">
-                            <p><strong>类型：</strong>{{ pet.type }}</p>
-                            <p><strong>品种：</strong>{{ pet.breed }}</p>
-                            <p><strong>性别：</strong>{{ pet.gender }}</p>
-                            <p><strong>体重：</strong>{{ pet.weight }} kg</p>
-                            <p><strong>毛色：</strong>{{ pet.color }}</p>
-                            <p><strong>生日：</strong>{{ pet.birthday }}</p>
-                            <div class="pet-tags">
-                                <span class="tag" v-for="tag in pet.tags" :key="tag">{{ tag }}</span>
-                            </div>
-                        </div>
+                    <div class="pet-details">
+                        <p><strong>性别：</strong>{{ pet.gender }}</p>
+                        <p><strong>体重：</strong>{{ pet.weight }} kg</p>
+                        <p><strong>毛色：</strong>{{ pet.color }}</p>
+                        <p><strong>生日：</strong>{{ pet.birthday }}</p>
                     </div>
-                </article>
+                    <div class="pet-tags">
+                        <span class="pet-tag" v-for="tag in pet.tags" :key="tag">{{ tag }}</span>
+                    </div>
+                    <div class="card-actions">
+                        <button class="action-btn edit-btn" @click="editPet(pet)">编辑</button>
+                        <button class="action-btn delete-btn" @click="deletePet(pet.id)">删除</button>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <div class="empty-state" v-else>
-                <p>还没有宠物档案，点击上方按钮创建</p>
-            </div>
-        </main>
+        <div v-if="pets.length === 0" class="empty-state">
+            <p>还没有宠物档案，点击上方按钮创建</p>
+        </div>
 
         <Teleport to="body">
             <div class="modal" v-if="showModal" @click.self="closeModal">
@@ -68,7 +68,12 @@
 
                             <div class="form-group">
                                 <label>照片</label>
-                                <input type="text" v-model="formData.photo" placeholder="输入照片URL" />
+                                <div class="upload-area" @click="triggerUpload" @dragover.prevent @drop.prevent="handleDrop">
+                                    <input type="file" id="photo-upload" accept="image/*" @change="handlePhotoUpload" style="display: none;">
+                                    <div class="upload-icon">📷</div>
+                                    <div class="upload-text" v-if="!formData.photo">点击或拖拽上传图片</div>
+                                    <div class="upload-text" v-else>已选择图片</div>
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -90,14 +95,15 @@
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label>毛色</label>
-                                <input type="text" v-model="formData.color" />
-                            </div>
-
-                            <div class="form-group">
-                                <label>生日</label>
-                                <input type="date" v-model="formData.birthday" required />
+                            <div class="form-row">
+                                <div class="form-group half-width">
+                                    <label>毛色</label>
+                                    <input type="text" v-model="formData.color" />
+                                </div>
+                                <div class="form-group half-width">
+                                    <label>生日</label>
+                                    <input type="date" v-model="formData.birthday" required />
+                                </div>
                             </div>
 
                             <div class="form-group">
@@ -132,6 +138,40 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function goToHome() {
+    router.push('/')
+}
+
+// 图片上传处理
+function triggerUpload() {
+    document.getElementById('photo-upload').click()
+}
+
+function handlePhotoUpload(event) {
+    const file = event.target.files[0]
+    if (file) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            formData.photo = e.target.result
+        }
+        reader.readAsDataURL(file)
+    }
+}
+
+function handleDrop(event) {
+    const file = event.dataTransfer.files[0]
+    if (file && file.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            formData.photo = e.target.result
+        }
+        reader.readAsDataURL(file)
+    }
+}
 
 const petTypeOptions = ['猫', '狗', '其他']
 const genderOptions = ['公', '母']
@@ -289,180 +329,98 @@ onMounted(() => {
     box-sizing: border-box;
 }
 
-.pet-profile-container {
-    width: 100%;
+.adoption-page {
     min-height: 100vh;
-    background: linear-gradient(135deg, #ffffff, #d6e8ff);
-    display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
+    background: linear-gradient(135deg, #f0f7ff, #e8f4fd);
+    padding-bottom: 40px;
 }
 
-.top {
-    height: 55px;
-    background: linear-gradient(to right, #65A3F0, #FDCBE6);
+.header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    justify-content: center;
+    padding: 15px 30px;
+    background: linear-gradient(to right, #65A3F0, #88c1ff, #FDCBE6);
     box-shadow: 0 2px 10px rgba(101, 163, 240, 0.3);
 }
 
-.top-title {
-    font: 599 28px SimHei;
-    color: white;
-    text-shadow: 0 2px 12px rgba(101, 163, 240, 0.5);
-    letter-spacing: 2px;
-    position: relative;
-    padding: 0 30px;
+.header-left {
     display: flex;
     align-items: center;
-    justify-content: center;
-    height: 100%;
-    line-height: 1;
-    transform: translateY(-2px);
+    gap: 15px;
 }
 
-.main-content {
-    flex: 1;
-    padding: 40px 80px;
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-}
-
-.action-buttons {
-    margin-bottom: 30px;
-    text-align: right;
-}
-
-.btn-primary {
-    padding: 12px 28px;
-    background: linear-gradient(135deg, #65A3F0, #88c1ff);
-    border: none;
-    border-radius: 8px;
+.home-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    padding: 8px 15px;
+    border-radius: 15px;
     color: white;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(101, 163, 240, 0.4);
-
-    &:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(101, 163, 240, 0.5);
-    }
-
-    &:active {
-        transform: scale(0.95);
-    }
-}
-
-.btn-secondary {
-    padding: 8px 18px;
-    background: linear-gradient(to right, #e1f0ff, #b3d9ff);
-    border: none;
-    border-radius: 6px;
-    color: #4a6fa5;
     font-size: 14px;
-    font-weight: 500;
     cursor: pointer;
-    transition: all 0.3s ease;
-    margin-right: 10px;
-    box-shadow: 0 2px 4px rgba(136, 193, 255, 0.3);
-
+    transition: all 0.3s;
+    
     &:hover {
-        background: linear-gradient(to right, #b3d9ff, #8cc2ff);
-        color: #2c5282;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(136, 193, 255, 0.4);
-    }
-
-    &:active {
-        transform: scale(0.95);
+        background: rgba(255, 255, 255, 0.3);
+        transform: scale(1.05);
     }
 }
 
-.btn-danger {
-    padding: 8px 18px;
-    background: linear-gradient(to right, #ffe6f0, #ffd1e0);
-    border: none;
-    border-radius: 6px;
-    color: #b56576;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 2px 4px rgba(255, 184, 217, 0.3);
-
-    &:hover {
-        background: linear-gradient(to right, #ffd1e0, #ffb8d9);
-        color: #8c3d54;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(255, 184, 217, 0.4);
-    }
-
-    &:active {
-        transform: scale(0.95);
-    }
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: white;
 }
 
-.pet-list {
+.header-right {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 70px;
+    align-items: center;
 }
 
-.pet-card {
-    flex: 0 0 calc(50% - 35px);
+.publish-btn {
     background: white;
-    border-radius: 16px;
-    padding: 18px;
-    box-shadow: 0 8px 24px rgba(101, 163, 240, 0.15);
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    border: 1px solid #F0F7FF;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 20px;
+    color: #65A3F0;
+    font-weight: bold;
     cursor: pointer;
-
+    transition: all 0.3s;
+    
     &:hover {
-        box-shadow: 0 12px 32px rgba(101, 163, 240, 0.25);
-        transform: translateY(-4px);
-        border-color: #A5CAF1;
+        background: #f0f7ff;
+        transform: scale(1.05);
     }
 }
 
-.pet-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 14px;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #F0F7FF;
-
-    h3 {
-        font: 700 20px SimHei;
-        color: #4a6fa5;
-        letter-spacing: 0.5px;
-    }
+.adoption-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 20px;
+    padding: 20px 30px;
 }
 
-.pet-card-body {
-    display: flex;
-    gap: 18px;
-}
-
-.pet-image {
-    flex-shrink: 0;
-    width: 95px;
-    height: 95px;
-    border-radius: 14px;
+.adoption-card {
+    background: white;
+    border-radius: 15px;
     overflow: hidden;
-    border: 3px solid #F0F7FF;
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s;
+    
+    &:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+    }
+}
+
+.card-image {
+    height: 200px;
+    overflow: hidden;
+    background: linear-gradient(135deg, #ffd1e0 0%, #b3d9ff 100%);
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #ffd1e0 0%, #b3d9ff 100%);
-    box-shadow: 0 4px 12px rgba(101, 163, 240, 0.2);
-
+    
     img {
         width: 100%;
         height: 100%;
@@ -471,74 +429,125 @@ onMounted(() => {
 }
 
 .pet-image-placeholder {
-    font-size: 38px;
+    font-size: 60px;
     font-weight: 800;
     color: white;
-    text-shadow: 0 2px 8px rgba(101, 163, 240, 0.3);
+    text-shadow: 0 4px 12px rgba(101, 163, 240, 0.4);
+}
+
+.card-content {
+    padding: 15px;
+}
+
+.pet-name {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+    margin-bottom: 10px;
 }
 
 .pet-info {
-    flex: 1;
-    font-size: 13px;
-    line-height: 2;
-    color: #797979;
-
-    strong {
-        color: #4a6fa5;
-        font-weight: 700;
-    }
-}
-
-.pet-tags {
-    margin-top: 12px;
     display: flex;
-    flex-wrap: wrap;
     gap: 8px;
+    margin-bottom: 10px;
 }
 
 .tag {
-    background: linear-gradient(135deg, #ffd1e0 0%, #FDCBE6 100%);
-    color: #8c3d54;
-    padding: 6px 16px;
-    border-radius: 100px;
-    font-size: 13px;
-    font-weight: 600;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     gap: 6px;
+    padding: 4px 8px 4px 12px;
+    background: #e0f2fe;
+    color: #0284c7;
+    border-radius: 15px;
+    font-size: 13px;
+    font-weight: 500;
 
     button {
-        background: rgba(255, 255, 255, 0.6);
+        width: 18px;
+        height: 18px;
         border: none;
-        font-size: 16px;
-        cursor: pointer;
-        color: #8c3d54;
-        padding: 0;
-        line-height: 1;
-        width: 20px;
-        height: 20px;
         border-radius: 50%;
+        background: rgba(255, 255, 255, 0.7);
+        color: #0284c7;
+        font-size: 14px;
+        cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 0;
+        line-height: 1;
         transition: all 0.2s ease;
 
         &:hover {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(239, 68, 68, 0.8);
+            color: white;
             transform: scale(1.1);
         }
     }
 }
 
+.pet-details {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 12px;
+
+    strong {
+        color: #333;
+        font-weight: bold;
+    }
+}
+
+.pet-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.pet-tag {
+    padding: 3px 10px;
+    background: #fef3c7;
+    color: #d97706;
+    border-radius: 15px;
+    font-size: 12px;
+}
+
+.card-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    
+    &.edit-btn {
+        background: #e0e7ff;
+        color: #4338ca;
+    }
+    
+    &.delete-btn {
+        background: #fee2e2;
+        color: #dc2626;
+    }
+    
+    &:hover {
+        opacity: 0.8;
+        transform: scale(1.02);
+    }
+}
+
 .empty-state {
     text-align: center;
-    padding: 120px 0;
-    color: #797979;
-
-    p {
-        font-size: 20px;
-        font-weight: 500;
-    }
+    padding: 50px;
+    color: #999;
 }
 
 .modal {
@@ -558,10 +567,10 @@ onMounted(() => {
 .modal-content {
     background: white;
     border-radius: 20px;
-    width: 90%;
-    max-width: 650px;
-    max-height: 90vh;
-    overflow-y: auto;
+    width: 95%;
+    max-width: 550px;
+    max-height: 95vh;
+    overflow-y: visible;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
@@ -569,12 +578,13 @@ onMounted(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 24px 30px;
+    padding: 20px 25px;
     border-bottom: 1px solid #F0F7FF;
     background: linear-gradient(to right, #65A3F0, #FDCBE6);
+    border-radius: 20px 20px 0 0;
 
     h2 {
-        font: 700 22px SimHei;
+        font: 700 20px SimHei;
         color: white;
         letter-spacing: 0.5px;
     }
@@ -603,33 +613,33 @@ onMounted(() => {
 }
 
 .modal-body {
-    padding: 30px;
+    padding: 20px 25px;
 }
 
 .form-row {
     display: flex;
-    gap: 20px;
-    margin-bottom: 24px;
+    gap: 15px;
+    margin-bottom: 18px;
 }
 
 .form-group {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
 
     label {
         display: block;
-        margin-bottom: 10px;
-        font-weight: 700;
+        margin-bottom: 8px;
+        font-weight: 600;
         color: #4a6fa5;
-        font-size: 15px;
+        font-size: 14px;
     }
 
     input,
     select {
         width: 100%;
-        padding: 14px 16px;
+        padding: 12px 14px;
         border: 2px solid #F0F7FF;
-        border-radius: 10px;
-        font-size: 16px;
+        border-radius: 8px;
+        font-size: 15px;
         outline: none;
         transition: all 0.3s ease;
         background: #F9FDFF;
@@ -656,17 +666,18 @@ onMounted(() => {
 .tags-input {
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    padding: 14px;
-    border: 2px solid #F0F7FF;
-    border-radius: 10px;
-    background: #F9FDFF;
+    gap: 8px;
+    padding: 10px;
+    border: 2px dashed #A5CAF1;
+    border-radius: 8px;
+    background: #fafdff;
     min-height: 60px;
     align-items: center;
     transition: all 0.3s ease;
 
     &:focus-within {
         border-color: #65A3F0;
+        border-style: solid;
         box-shadow: 0 0 0 4px rgba(101, 163, 240, 0.1);
         background: white;
     }
@@ -677,7 +688,7 @@ onMounted(() => {
         background: transparent;
         padding: 0;
         min-width: 150px;
-        font-size: 16px;
+        font-size: 14px;
         color: #4a6fa5;
         outline: none;
 
@@ -688,18 +699,18 @@ onMounted(() => {
 }
 
 .existing-tags {
-    margin-top: 14px;
+    margin-top: 10px;
     display: flex;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
 }
 
 .existing-tag {
     background: #F0F7FF;
     color: #4a6fa5;
-    padding: 8px 16px;
+    padding: 6px 12px;
     border-radius: 100px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -714,11 +725,76 @@ onMounted(() => {
     }
 }
 
+.upload-area {
+    border: 2px dashed #A5CAF1;
+    border-radius: 10px;
+    padding: 25px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fafdff;
+
+    &:hover {
+        border-color: #65A3F0;
+        background: #f0f7ff;
+    }
+
+    &:active {
+        transform: scale(0.98);
+    }
+}
+
+.upload-icon {
+    font-size: 36px;
+    margin-bottom: 10px;
+}
+
+.upload-text {
+    color: #6b7280;
+    font-size: 14px;
+}
+
 .form-actions {
     display: flex;
     justify-content: flex-end;
-    gap: 14px;
-    margin-top: 36px;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn-secondary {
+    padding: 10px 20px;
+    background: #f3f4f6;
+    border: none;
+    border-radius: 8px;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    
+    &:hover {
+        background: #e5e7eb;
+        transform: scale(1.02);
+    }
+}
+
+.btn-primary {
+    padding: 10px 20px;
+    background: linear-gradient(to right, #65A3F0, #88c1ff);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 12px rgba(101, 163, 240, 0.3);
+    
+    &:hover {
+        background: linear-gradient(to right, #4a9ef0, #65A3F0);
+        transform: scale(1.02);
+        box-shadow: 0 6px 16px rgba(101, 163, 240, 0.4);
+    }
 }
 
 @media (max-width: 768px) {

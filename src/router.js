@@ -8,6 +8,7 @@ import EditAdoption from './components/EditAdoption.vue';
 import Friends from './components/Friends.vue';
 import Chat from './components/Chat.vue';
 import EditProfile from './components/EditProfile.vue';
+import File from './components/file.vue';
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -47,6 +48,10 @@ const router = createRouter({
     {
         path:'/editProfile',
         component:EditProfile
+    },
+    {
+        path:'/file',
+        component:File
     }
   ]
 });

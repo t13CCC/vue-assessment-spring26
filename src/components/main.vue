@@ -19,7 +19,7 @@
             <h1>萌宠小镇</h1>
         </div>
         <div class="section3">
-            <div class="file choice">
+            <div class="file choice" @click="goToFile">
                 <div class="top">-宠物档案-</div>
                 <div class="choiceContent">
                     <div class="contentp">记录自己的宠物吧！</div>
@@ -72,6 +72,10 @@ const goToEditProfile = () => {
 
 const goToFriends = () => {
     router.push('/friends');
+};
+
+const goToFile = () => {
+    router.push('/file');
 };
 </script>
 
