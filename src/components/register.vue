@@ -32,7 +32,7 @@ const isEmail = ref(false);
 // 验证表单
 const validateForm = () => {
     let isValid = true;
-    
+
     // 验证账号（手机号或邮箱）
     if (!registerForm.account) {
         errors.account = '请输入手机号或邮箱';
@@ -43,7 +43,7 @@ const validateForm = () => {
     } else {
         errors.account = '';
     }
-    
+
     // 验证验证码
     if (!registerForm.code) {
         errors.code = '请输入验证码';
@@ -54,7 +54,7 @@ const validateForm = () => {
     } else {
         errors.code = '';
     }
-    
+
     // 验证密码
     if (!registerForm.password) {
         errors.password = '请设置密码';
@@ -65,32 +65,32 @@ const validateForm = () => {
     } else {
         errors.password = '';
     }
-    
+
     return isValid;
 };
 
 // 获取验证码
 const getver = async () => {
     if (codeCountdown.value > 0) return;
-    
+
     // 先验证账号格式
     if (!registerForm.account) {
         errors.account = '请先输入手机号或邮箱';
         return;
     }
-    
+
     if (!isPhone.value && !isEmail.value) {
         errors.account = '请输入正确的手机号或邮箱格式';
         return;
     }
-    
-    const data = isPhone.value 
-        ? { phone: registerForm.account } 
+
+    const data = isPhone.value
+        ? { phone: registerForm.account }
         : { email: registerForm.account };
-    
+
     try {
         const response = await axios.post('http://localhost:8081/api/auth/login/email/code/send', data);
-        
+
         if (response.data.code === '100000') {
             codeCountdown.value = 60;
             startCountdown();
@@ -109,7 +109,7 @@ const startCountdown = () => {
     const timer = setInterval(() => {
         codeCountdown.value--;
         codeButtonText.value = `${codeCountdown.value}秒后重发`;
-        
+
         if (codeCountdown.value <= 0) {
             clearInterval(timer);
             codeButtonText.value = '获取验证码';
@@ -120,18 +120,18 @@ const startCountdown = () => {
 // 提交注册
 const handleRegister = async () => {
     if (!validateForm()) return;
-    
+
     isSubmitting.value = true;
-    
+
     const data = {
         phone: isPhone.value ? registerForm.account : undefined,
         email: isEmail.value ? registerForm.account : undefined,
         password: registerForm.password
     };
-    
+
     try {
         const response = await axios.post('http://localhost:8081/api/auth/register', data);
-        
+
         if (response.data.code === '100000') {
             alert('注册成功！请登录');
             // 重置表单
@@ -174,13 +174,14 @@ watchEffect(() => {
                 <div class="input-wrapper">
                     <div class="input" :class="{ 'error': errors.account }">
                         <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M8 30H40V42C40 43.1046 39.1046 44 38 44H10C8.89543 44 8 43.1046 8 42V30Z" fill="none"
-                                stroke="#65A3F0" stroke-width="3" stroke-linejoin="round" />
+                            <path d="M8 30H40V42C40 43.1046 39.1046 44 38 44H10C8.89543 44 8 43.1046 8 42V30Z"
+                                fill="none" stroke="#65A3F0" stroke-width="3" stroke-linejoin="round" />
                             <path d="M40 30V6C40 4.89543 39.1046 4 38 4H10C8.89543 4 8 4.89543 8 6V30" stroke="#65A3F0"
                                 stroke-width="3" stroke-linejoin="round" />
                             <path d="M22 37H26" stroke="#65A3F0" stroke-width="3" stroke-linecap="round" />
                         </svg>
-                        <input type="text" placeholder="请输入手机号/邮箱" v-model="registerForm.account" :class="{ 'error-input': errors.account }">
+                        <input type="text" placeholder="请输入手机号/邮箱" v-model="registerForm.account"
+                            :class="{ 'error-input': errors.account }">
                     </div>
                     <span v-if="errors.account" class="error-text">{{ errors.account }}</span>
                 </div>
@@ -193,7 +194,8 @@ watchEffect(() => {
                             <path d="M16 24L22 30L34 18" stroke="#FF8CEC" stroke-width="3" stroke-linecap="round"
                                 stroke-linejoin="round" />
                         </svg>
-                        <input type="text" placeholder="请输入验证码" v-model="registerForm.code" :class="{ 'error-input': errors.code }">
+                        <input type="text" placeholder="请输入验证码" v-model="registerForm.code"
+                            :class="{ 'error-input': errors.code }">
                         <button id="ver" @click="getver()" :disabled="codeCountdown > 0">{{ codeButtonText }}</button>
                     </div>
                     <span v-if="errors.code" class="error-text">{{ errors.code }}</span>
@@ -201,14 +203,15 @@ watchEffect(() => {
                 <div class="input-wrapper">
                     <div class="input" :class="{ 'error': errors.password }">
                         <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect x="6" y="22" width="36" height="22" rx="2" fill="none" stroke="#67C23A" stroke-width="3"
-                                stroke-linejoin="round" />
+                            <rect x="6" y="22" width="36" height="22" rx="2" fill="none" stroke="#67C23A"
+                                stroke-width="3" stroke-linejoin="round" />
                             <path d="M14 22V14C14 8.47715 18.4772 4 24 4C29.5228 4 34 8.47715 34 14V22" stroke="#67C23A"
                                 stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
                             <path d="M24 30V36" stroke="#67C23A" stroke-width="3" stroke-linecap="round"
                                 stroke-linejoin="round" />
                         </svg>
-                        <input type="password" placeholder="设置密码（6-20个字符）" v-model="registerForm.password" :class="{ 'error-input': errors.password }">
+                        <input type="password" placeholder="设置密码（6-20个字符）" v-model="registerForm.password"
+                            :class="{ 'error-input': errors.password }">
                     </div>
                     <span v-if="errors.password" class="error-text">{{ errors.password }}</span>
                 </div>
@@ -219,7 +222,7 @@ watchEffect(() => {
                 </div>
                 <div class="login-link">
                     <span>已有帐号？</span>
-                    <router-link to="/signin" class="link">立即登录</router-link>
+                    <router-link to="/" class="link">立即登录</router-link>
                 </div>
             </div>
         </div>
@@ -236,7 +239,7 @@ h1 {
 #nav {
     display: flex;
     position: absolute;
-    background: linear-gradient(to right, #88c1ff,rgb(255, 255, 255),#ffc7e5);
+    background: linear-gradient(to right, #88c1ff, rgb(255, 255, 255), #ffc7e5);
     width: 100%;
     left: 0;
     box-shadow: 0 1px 15px #efefef;
@@ -283,7 +286,7 @@ h1 {
 
     &:hover {
         transform: translateY(-3px);
-        box-shadow: 
+        box-shadow:
             0 5px 15px rgba(101, 163, 240, 0.2);
     }
 }
@@ -407,7 +410,7 @@ input.error-input {
     color: #ffffff;
     cursor: pointer;
     background: linear-gradient(135deg, #65A3F0 0%, #87BDFF 50%, #FDCBE6 100%);
-    box-shadow: 
+    box-shadow:
         0 4px 15px rgba(101, 163, 240, 0.4),
         0 2px 5px rgba(253, 203, 230, 0.3);
     transition: all 0.3s ease;
@@ -428,7 +431,7 @@ input.error-input {
 
 #reg:hover:not(:disabled) {
     transform: translateY(-3px);
-    box-shadow: 
+    box-shadow:
         0 8px 25px rgba(101, 163, 240, 0.5),
         0 4px 10px rgba(253, 203, 230, 0.4);
 }

@@ -53,7 +53,8 @@ import Signin from './signin.vue';
 
 const router = useRouter();
 const showEditProfile = ref(false);
-const showSignin = ref(true); // 控制登录组件显示
+// 从 localStorage 读取登录状态，默认显示登录弹窗
+const showSignin = ref(!localStorage.getItem('isLoggedIn'));
 
 let user = reactive({
     name: "未设置用户名",
@@ -81,6 +82,8 @@ const goToFile = () => {
 // 登录成功后隐藏登录组件
 const handleLoginSuccess = () => {
     showSignin.value = false;
+    // 将登录状态保存到 localStorage
+    localStorage.setItem('isLoggedIn', 'true');
 };
 </script>
 

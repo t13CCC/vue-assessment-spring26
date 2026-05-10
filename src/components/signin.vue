@@ -2,6 +2,7 @@
     <div class="window">
         <div class="top">
             <p class="topP">--登录--</p>
+            <button class="btn-register" @click="goToRegister">去注册</button>
         </div>
         <div class="section">
             <div class="section1">
@@ -37,12 +38,21 @@
 <script setup>
 import { reactive, ref, watchEffect } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 
 //登录方式
 let placeholderText = ref("")
 
 // 定义自定义事件，通知父组件登录成功
 const emit = defineEmits(['login-success']);
+
+// 获取路由实例
+const router = useRouter();
+
+// 跳转到注册页面
+const goToRegister = () => {
+    router.push('/register');
+};
 //登录输入反馈
 let signinBack = reactive({
     img: "src/assets/banMa/IMG_4021.PNG",
@@ -410,11 +420,35 @@ function login() {
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
 }
 
 .topP {
     font: 599 20px SimHei;
     color: white;
+}
+
+/* 去注册按钮样式 */
+.btn-register {
+    background: rgba(255, 255, 255, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    padding: 6px 16px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: absolute;
+    right: 20px;
+}
+
+.btn-register:hover {
+    background: rgba(255, 255, 255, 0.5);
+    transform: scale(1.05);
+}
+
+.btn-register:active {
+    transform: scale(0.95);
 }
 
 .messageInput {
