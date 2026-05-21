@@ -1,6 +1,6 @@
 <template>
   <Transition name="slide-fade">
-    <div v-if="true" class="birthday-wish-overlay" @click="closeWish">
+    <div v-if="showBirthdayWish" class="birthday-wish-overlay" @click="closeWish">
       <div class="birthday-card" @click.stop>
         <div class="birthday-decoration">
           <span class="balloon">🎈</span>

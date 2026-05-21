@@ -56,7 +56,10 @@ import Signin from './signin.vue';
 const router = useRouter();
 const showEditProfile = ref(false);
 // 从 localStorage 读取登录状态，默认显示登录弹窗
-const showSignin = ref(!localStorage.getItem('isLoggedIn'));
+const isLoggedInValue = localStorage.getItem('isLoggedIn');
+console.log('isLoggedIn value:', isLoggedInValue);
+console.log('showSignin should be:', !isLoggedInValue);
+const showSignin = ref(!isLoggedInValue);
 
 let user = reactive({
     name: "未设置用户名",
@@ -77,7 +80,7 @@ function loadPets() {
         const thisYear = today.getFullYear();
         const month = String(today.getMonth() + 1).padStart(2, '0');
         const day = String(today.getDate()).padStart(2, '0');
-        
+
         pets.value = [
             {
                 id: 1,

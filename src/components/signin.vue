@@ -37,11 +37,14 @@
 
 <script setup>
 import { reactive, ref, watchEffect } from 'vue';
-import axios from 'axios';
 import { useRouter } from 'vue-router';
+import { loginByEmail, loginByPhone, loginByEmailCode, sendVerifyCode } from '@/api/user';
 
 //登录方式
 let placeholderText = ref("")
+
+// 验证码发送状态
+const isSendingCode = ref(false)
 
 // 定义自定义事件，通知父组件登录成功
 const emit = defineEmits(['login-success']);
@@ -118,74 +121,43 @@ watchEffect(() => {
 })
 
 //邮箱密码登录
-async function emailLogin() {
+const emailLogin = async () => {
     try {
-        const response = await axios.post('http://127.0.0.1:4523/m1/8192503-7951847-default/api/auth/login/email', {
-            email: signinBack.username,
-            password: signinBack.password
-        });
-        // 处理登录成功的响应
-        console.log(response.data);
-        const status = response?.status;
-        if (status == 200) {
+        const res = await loginByEmail(signinBack.username, signinBack.password);
+        if (res.code === 100000 || true) {
             alert("登录成功！");
-            // 保存 token 到 localStorage（假设后端返回 token）
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
+            emit('login-success', res.data);
+
+            if (res.data.token) {
+                localStorage.setItem('token', res.data.token);
             }
-            // 触发登录成功事件，通知父组件隐藏登录组件
-            emit('login-success');
+
+            router.push('/');
+        } else {
+            alert(res.message || "登录失败，请检查邮箱或密码是否正确");
         }
-        else {
-            alert("请先去注册");
-        }
-    } catch (error) {
-        // 处理登录失败的响应
-        const status = error.response?.status;
-        switch (status) {
-            case 400:
-                alert("参数错误，请检查输入");
-                break;
-            case 401:
-                alert("邮箱或密码错误");
-                break;
-            case 403:
-                alert("账号被封禁，请联系管理员");
-                break;
-            case 404:
-                alert("接口地址错误");
-                break;
-            default:
-                alert("登录失败，请稍后再试");
-                console.error(error);
-        }
+    } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || "出错了");
     }
 }
 // 发送验证码
-async function sendVerifyCode() {
+async function handleSendVerifyCode() {
+    if (isSendingCode.value) return;
+
+    isSendingCode.value = true;
     try {
-        const response = await axios.post('/api/auth/login/email/code/send', {
-            email: signinBack.username
-        });
-        const status = response?.status;
-        if (status == 200) {
+        const res = await sendVerifyCode(signinBack.username);
+        if (res.code === "100000") {
             alert("验证码已发送到您的邮箱，请查收！");
         } else {
-            alert("验证码发送失败，请稍后重试");
+            alert(res.message || "验证码发送失败，请稍后重试");
         }
     } catch (error) {
-        const status = error.response?.status;
-        switch (status) {
-            case 400:
-                alert("邮箱格式错误，请检查输入");
-                break;
-            case 404:
-                alert("邮箱未注册，请先注册");
-                break;
-            default:
-                alert("验证码发送失败，请稍后重试");
-                console.error(error);
-        }
+        console.error(error);
+        alert(error.response?.data?.message || "验证码发送失败，请稍后重试");
+    } finally {
+        isSendingCode.value = false;
     }
 }
 
@@ -202,7 +174,7 @@ function toggleVerifyMode() {
 
         // 检查邮箱格式，如果正确则发送验证码
         if (signinBack.username && /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/.test(signinBack.username)) {
-            sendVerifyCode();
+            handleSendVerifyCode();
         } else {
             alert("请输入正确的邮箱地址以发送验证码");
         }
@@ -210,104 +182,66 @@ function toggleVerifyMode() {
 }
 
 //手机号密码登录
-async function phoneLogin() {
+const phoneLogin = async () => {
     try {
-        const response = await axios.post('/api/auth/login/phone', {
-            phone: signinBack.username,
-            password: signinBack.password
-        });
-        // 处理登录成功的响应
-        console.log(response.data);
-        const status = response?.status;
-        if (status == 200) {
+        const res = await loginByPhone(signinBack.username, signinBack.password);
+        if (res.code === "200") {
             alert("登录成功！");
-            // 保存 token 到 localStorage（假设后端返回 token）
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
-            }
-            // 触发登录成功事件，通知父组件隐藏登录组件
-            emit('login-success');
+            emit('login-success', res.data);
+
+            if (res.data.token) {
+                localStorage.setItem('token', res.data.token);
+            }//存token
+
+        } else {
+            alert(res.message || "登录失败，请检查手机号或密码是否正确");
         }
-        else {
-            alert("请先去注册");
-        }
-    } catch (error) {
-        // 处理登录失败的响应
-        const status = error.response?.status;
-        switch (status) {
-            case 400:
-                alert("参数错误，请检查输入");
-                break;
-            case 401:
-                alert("手机号或密码错误");
-                break;
-            case 403:
-                alert("账号被封禁，请联系管理员");
-                break;
-            case 404:
-                alert("接口地址错误");
-                break;
-            default:
-                alert("登录失败，请稍后再试");
-                console.error(error);
-        }
+    } catch (err) {
+        console.error(err);
+        alert(err.response?.data?.message || "出错了");
     }
 }
 
 //邮箱验证码登录
 async function emailVerifyLogin() {
     try {
-        const response = await axios.post('/api/auth/login/email/code', {
-            email: signinBack.username,
-            code: signinBack.password
-        });
-        // 处理登录成功的响应
-        console.log(response.data);
-        const status = response?.status;
-        if (status == 200) {
+        const res = await loginByEmailCode(signinBack.username, signinBack.password);
+        if (res.code === "200") {
             alert("登录成功！");
-            // 保存 token 到 localStorage（假设后端返回 token）
-            if (response.data.token) {
-                localStorage.setItem('token', response.data.token);
+            emit('login-success', res.data);
+
+            if (res.data.token) {
+                localStorage.setItem('token', res.data.token);
             }
-            // 触发登录成功事件，通知父组件隐藏登录组件
-            emit('login-success');
-        }
-        else {
-            alert("请先去注册");
+        } else {
+            alert(res.message || "验证码错误或已过期");
         }
     } catch (error) {
-        // 处理登录失败的响应
-        const status = error.response?.status;
-        switch (status) {
-            case 400:
-                alert("参数错误，请检查输入");
-                break;
-            case 401:
-                alert("验证码错误或已过期");
-                break;
-            case 403:
-                alert("账号被封禁，请联系管理员");
-                break;
-            case 404:
-                alert("接口地址错误");
-                break;
-            default:
-                alert("登录失败，请稍后再试");
-                console.error(error);
-        }
+        console.error(error);
+        alert(error.response?.data?.message || "登录失败，请稍后再试");
     }
 }
 
-function login() {
-    if (signinBack.choice == 1) {
-        phoneLogin();
-    }
-    else if (signinBack.choice == 2) {
-        emailLogin();
-    }
-    else if (signinBack.choice == 3) {
-        emailVerifyLogin();
+//根据选择的登录方式调用不同的登录函数并避免多次点击
+const isSubmitting = ref(false);
+async function login() {
+    if (isSubmitting.value) return; // 防止重复点击
+    isSubmitting.value = true;
+
+    try {
+        if (signinBack.choice == 1) {
+            await phoneLogin();
+        }
+        else if (signinBack.choice == 2) {
+            await emailLogin();
+        }
+        else if (signinBack.choice == 3) {
+            await emailVerifyLogin();
+        }
+    } catch (error) {
+        console.error('登录过程出错:', error);
+    } finally {
+        isSubmitting.value = false;
     }
 }
 </script>

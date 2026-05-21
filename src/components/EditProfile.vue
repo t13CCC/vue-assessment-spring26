@@ -1,9 +1,9 @@
 <script setup>
-import { ref, defineEmits } from 'vue'
+import { ref, defineEmits, reactive, onMounted } from 'vue'
+import { getUserInfo, updateUserInfo } from '@/api/user'
 
 const emit = defineEmits(['close'])
 
-const avatarUrl = ref('https://neeko-copilot.bytedance.net/api/text_to_image?prompt=default%20user%20avatar%20portrait%20icon%20minimalist%20style&image_size=square')
 const fileInput = ref(null)
 
 const handleAvatarClick = () => {
@@ -15,19 +15,69 @@ const handleFileChange = (event) => {
     if (file) {
         const reader = new FileReader()
         reader.onload = (e) => {
-            avatarUrl.value = e.target?.result
+            userInfo.avatar = e.target?.result
         }
         reader.readAsDataURL(file)
     }
 }
 
-const handleSave = () => {
-    emit('close')
+const isSaving = ref(false)
+
+const handleSave = async () => {
+    isSaving.value = true
+    try {
+        const res = await updateUserInfo(userInfo)
+        switch (res.code) {
+            case "100000":
+                alert('修改成功')
+                emit('close')
+                break
+            case "100002":
+                alert(res.message || '用户未登录或登录已过期')
+                break
+            case "200001":
+                alert(res.message || '该手机号或邮箱已被使用')
+                break
+            default:
+                alert(res.message || '修改失败')
+                break
+        }
+    } catch (error) {
+        alert('保存失败，请稍后重试')
+    } finally {
+        isSaving.value = false
+    }
 }
 
 const handleCancel = () => {
     emit('close')
 }
+
+const userInfo = reactive({
+    nickname: '',
+    gender: 0,
+    email: '',
+    phone: '',
+    avatar: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=default%20user%20avatar%20portrait%20icon%20minimalist%20style&image_size=square',
+    bio: ''
+})
+// 组件挂载时获取用户信息
+onMounted(async () => {
+    try {
+        const res = await getUserInfo()
+        if (res.code === "100000") {
+            userInfo.nickname = res.data.nickname || ''
+            userInfo.gender = res.data.gender ?? 0
+            userInfo.email = res.data.email || ''
+            userInfo.phone = res.data.phone || ''
+            if (res.data.avatar) {
+                userInfo.avatar = res.data.avatar
+            }
+        }
+    } catch (error) {
+        console.error('获取用户信息失败:', error)
+    }
+})
 </script>
 
 <template>
@@ -39,20 +89,20 @@ const handleCancel = () => {
         <div class="edit-card">
 
             <div class="form-item pho">
-                <img :src="avatarUrl" alt="头像" class="avatar" @click="handleAvatarClick">
+                <img :src="userInfo.avatar" alt="头像" class="avatar" @click="handleAvatarClick">
                 <input ref="fileInput" type="file" accept="image/*" class="avatar-input" @change="handleFileChange">
             </div>
 
             <div class="form-item le">
                 <label>昵称:</label>
-                <input type="text" value="" class="name">
+                <input type="text" v-model="userInfo.nickname" class="name">
             </div>
 
             <div class="sex">
                 <label>性别:</label>
                 <div class="gender">
                     <div class="gender-item">
-                        <input type="radio" name="gender" id="man">
+                        <input type="radio" name="gender" id="man" v-model.number="userInfo.gender" :value="1">
                         <label for="man"><svg width="20" height="20" viewBox="0 0 48 48" fill="none"
                                 xmlns="http://www.w3.org/2000/svg">
                                 <path d="M41.9517 15.0483V6.04834H32.9517" stroke="#8cafff" stroke-width="4"
@@ -65,7 +115,7 @@ const handleCancel = () => {
                             </svg>男</label>
                     </div>
                     <div class="gender-item">
-                        <input type="radio" name="gender" id="woman">
+                        <input type="radio" name="gender" id="woman" v-model.number="userInfo.gender" :value="2">
                         <label for="woman"><svg width="20" height="20" viewBox="0 0 48 48" fill="none"
                                 xmlns="http://www.w3.org/2000/svg">
                                 <g clip-path="url(#icon-77eca05bbccbbd09)">
@@ -90,12 +140,12 @@ const handleCancel = () => {
 
             <div class="form-item">
                 <label>手机号:</label>
-                <input type="text" value="">
+                <input type="text" v-model="userInfo.phone">
             </div>
 
             <div class="form-item">
                 <label>邮箱:</label>
-                <input type="text" value="">
+                <input type="text" v-model="userInfo.email">
             </div>
 
             <div class="form-item">
