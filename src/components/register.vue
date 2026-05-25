@@ -1,26 +1,22 @@
 <script setup>
-import axios from 'axios';
 import { ref, reactive, watchEffect } from 'vue';
 import { RouterLink } from 'vue-router';
+import { register } from '@/api/user';
 
 
 // 注册表单数据
 const registerForm = reactive({
     account: '', // 手机号/邮箱
-    code: '',
     password: ''
 });
 
 // 表单错误信息
 const errors = reactive({
     account: '',
-    code: '',
     password: ''
 });
 
-// 验证码倒计时
-const codeCountdown = ref(0);
-const codeButtonText = ref('获取验证码');
+
 
 // 是否正在提交
 const isSubmitting = ref(false);
@@ -44,17 +40,6 @@ const validateForm = () => {
         errors.account = '';
     }
 
-    // 验证验证码
-    if (!registerForm.code) {
-        errors.code = '请输入验证码';
-        isValid = false;
-    } else if (!/^\d{6}$/.test(registerForm.code)) {
-        errors.code = '验证码应为6位数字';
-        isValid = false;
-    } else {
-        errors.code = '';
-    }
-
     // 验证密码
     if (!registerForm.password) {
         errors.password = '请设置密码';
@@ -69,53 +54,7 @@ const validateForm = () => {
     return isValid;
 };
 
-// 获取验证码
-const getver = async () => {
-    if (codeCountdown.value > 0) return;
 
-    // 先验证账号格式
-    if (!registerForm.account) {
-        errors.account = '请先输入手机号或邮箱';
-        return;
-    }
-
-    if (!isPhone.value && !isEmail.value) {
-        errors.account = '请输入正确的手机号或邮箱格式';
-        return;
-    }
-
-    const data = isPhone.value
-        ? { phone: registerForm.account }
-        : { email: registerForm.account };
-
-    try {
-        const response = await axios.post('http://localhost:8081/api/auth/login/email/code/send', data);
-
-        if (response.data.code === '100000') {
-            codeCountdown.value = 60;
-            startCountdown();
-            errors.account = '';
-        } else {
-            errors.account = response.data.message || '发送失败';
-        }
-    } catch (error) {
-        console.error('发送验证码失败:', error);
-        errors.account = '发送验证码失败，请稍后重试';
-    }
-};
-
-// 倒计时
-const startCountdown = () => {
-    const timer = setInterval(() => {
-        codeCountdown.value--;
-        codeButtonText.value = `${codeCountdown.value}秒后重发`;
-
-        if (codeCountdown.value <= 0) {
-            clearInterval(timer);
-            codeButtonText.value = '获取验证码';
-        }
-    }, 1000);
-};
 
 // 提交注册
 const handleRegister = async () => {
@@ -130,16 +69,15 @@ const handleRegister = async () => {
     };
 
     try {
-        const response = await axios.post('http://localhost:8081/api/auth/register', data);
+        const response = await register(data);
 
-        if (response.data.code === '100000') {
+        if (response.code === '200') {
             alert('注册成功！请登录');
             // 重置表单
             registerForm.account = '';
-            registerForm.code = '';
             registerForm.password = '';
         } else {
-            alert(response.data.message || '注册失败');
+            alert(response.message || '注册失败');
         }
     } catch (error) {
         console.error('注册失败:', error);
@@ -184,21 +122,6 @@ watchEffect(() => {
                             :class="{ 'error-input': errors.account }">
                     </div>
                     <span v-if="errors.account" class="error-text">{{ errors.account }}</span>
-                </div>
-                <div class="input-wrapper">
-                    <div class="input" :class="{ 'error': errors.code }">
-                        <svg width="18" height="18" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path
-                                d="M24 44C29.5228 44 34.5228 41.7614 38.1421 38.1421C41.7614 34.5228 44 29.5228 44 24C44 18.4772 41.7614 13.4772 38.1421 9.85786C34.5228 6.23858 29.5228 4 24 4C18.4772 4 13.4772 6.23858 9.85786 9.85786C6.23858 13.4772 4 18.4772 4 24C4 29.5228 6.23858 34.5228 9.85786 38.1421C13.4772 41.7614 18.4772 44 24 44Z"
-                                fill="none" stroke="#FF8CEC" stroke-width="3" stroke-linejoin="round" />
-                            <path d="M16 24L22 30L34 18" stroke="#FF8CEC" stroke-width="3" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                        <input type="text" placeholder="请输入验证码" v-model="registerForm.code"
-                            :class="{ 'error-input': errors.code }">
-                        <button id="ver" @click="getver()" :disabled="codeCountdown > 0">{{ codeButtonText }}</button>
-                    </div>
-                    <span v-if="errors.code" class="error-text">{{ errors.code }}</span>
                 </div>
                 <div class="input-wrapper">
                     <div class="input" :class="{ 'error': errors.password }">
@@ -276,7 +199,7 @@ h1 {
     align-items: center;
     flex-direction: column;
     width: 530px;
-    height: 550px;
+    height: 470px;
     border-radius: 25px;
     border: 3px solid #d0dcfa;
     background: #f9fcff93;
@@ -295,7 +218,7 @@ h1 {
     display: flex;
     width: 460px;
     background-color: #ffffffc6;
-    height: 370px;
+    height: 290px;
     flex-direction: column;
     border-radius: 25px;
     justify-content: flex-start;
@@ -331,7 +254,6 @@ h1 {
 .input-wrapper {
     width: 320px;
     height: 65px;
-    margin-bottom: 5px;
     position: relative;
 }
 
@@ -377,26 +299,6 @@ input.error-input {
     color: #ff6b6b;
     font-size: 13px;
     white-space: nowrap;
-}
-
-#ver {
-    color: #0154e3;
-    background-color: #ffffff00;
-    border: none;
-    cursor: pointer;
-    font-size: 18px;
-    margin-left: -70px;
-    transition: all 0.3s;
-}
-
-#ver:hover:not(:disabled) {
-    color: #007bff;
-    text-decoration: underline;
-}
-
-#ver:disabled {
-    color: #999;
-    cursor: not-allowed;
 }
 
 #reg {

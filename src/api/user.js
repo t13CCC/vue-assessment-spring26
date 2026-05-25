@@ -58,3 +58,12 @@ export function updateUserInfo(userInfo) {
     data: userInfo,
   });
 }
+
+//注册接口
+export function register(data) {
+  return request({
+    url: "api/auth/register",
+    method: "POST",
+    data: data,
+  });
+}

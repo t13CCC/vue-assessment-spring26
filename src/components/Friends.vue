@@ -38,16 +38,16 @@
             
             <!-- 好友列表 -->
             <div class="friends-list">
-                <div v-for="friend in filteredFriends" :key="friend.id" class="friend-card">
+                <div v-for="friend in filteredFriends" :key="friend.friendId" class="friend-card">
                     <img :src="friend.avatar || '/src/assets/avator.png'" alt="头像" class="friend-avatar">
                     <div class="friend-info">
-                        <h3 class="friend-name">{{ friend.name }}</h3>
+                        <h3 class="friend-name">{{ friend.remark || friend.nickname }}</h3>
                         <p class="friend-group">{{ getGroupName(friend.groupId) }}</p>
                     </div>
                     <div class="friend-actions">
-                        <button class="action-btn chat-btn" @click="goToChat(friend.id)">💬 聊天</button>
+                        <button class="action-btn chat-btn" @click="goToChat(friend.friendId)">💬 聊天</button>
                         <button class="action-btn group-btn" @click="showGroupModal(friend)">📁 分组</button>
-                        <button class="action-btn delete-btn" @click="deleteFriend(friend.id)">🗑️ 删除</button>
+                        <button class="action-btn delete-btn" @click="deleteFriend(friend.friendId)">🗑️ 删除</button>
                     </div>
                 </div>
             </div>
@@ -67,9 +67,9 @@
                     </div>
                     <p class="group-count">成员数量：{{ getFriendsInGroup(group.id).length }}</p>
                     <div class="group-friends">
-                        <div v-for="friend in getFriendsInGroup(group.id)" :key="friend.id" class="mini-friend">
+                        <div v-for="friend in getFriendsInGroup(group.id)" :key="friend.friendId" class="mini-friend">
                             <img :src="friend.avatar || '/src/assets/avator.png'" alt="头像" class="mini-avatar">
-                            <span class="mini-name">{{ friend.name }}</span>
+                            <span class="mini-name">{{ friend.remark || friend.nickname }}</span>
                         </div>
                         <div v-if="getFriendsInGroup(group.id).length === 0" class="no-friends">
                             暂无成员
@@ -216,12 +216,12 @@ const friendGroups = ref([
 
 // 好友列表
 const friends = ref([
-    { id: 2, name: '爱猫达人', avatar: '/src/assets/banMa/IMG_3972.PNG', groupId: 1 },
-    { id: 3, name: '狗狗控', avatar: '/src/assets/banMa/IMG_3973.PNG', groupId: 1 },
-    { id: 4, name: '小明', avatar: '/src/assets/banMa/IMG_3974.PNG', groupId: 2 },
-    { id: 5, name: '小红', avatar: '/src/assets/banMa/IMG_3975.PNG', groupId: 2 },
-    { id: 6, name: '张同事', avatar: '/src/assets/banMa/IMG_3980.PNG', groupId: 3 },
-    { id: 7, name: '李同事', avatar: '/src/assets/banMa/IMG_3982.PNG', groupId: 3 }
+    { friendId: '2', nickname: '爱猫达人', avatar: '/src/assets/banMa/IMG_3972.PNG', groupId: 1, remark: '', createdTime: '2024-01-15T10:30:00', updatedTime: '2024-01-15T10:30:00', message: '', timestamp: Date.now() },
+    { friendId: '3', nickname: '狗狗控', avatar: '/src/assets/banMa/IMG_3973.PNG', groupId: 1, remark: '好友A', createdTime: '2024-02-20T14:20:00', updatedTime: '2024-02-20T14:20:00', message: '', timestamp: Date.now() },
+    { friendId: '4', nickname: '小明', avatar: '/src/assets/banMa/IMG_3974.PNG', groupId: 2, remark: '', createdTime: '2024-03-05T09:15:00', updatedTime: '2024-03-05T09:15:00', message: '', timestamp: Date.now() },
+    { friendId: '5', nickname: '小红', avatar: '/src/assets/banMa/IMG_3975.PNG', groupId: 2, remark: '闺蜜', createdTime: '2024-01-10T16:45:00', updatedTime: '2024-01-10T16:45:00', message: '', timestamp: Date.now() },
+    { friendId: '6', nickname: '张同事', avatar: '/src/assets/banMa/IMG_3980.PNG', groupId: 3, remark: '', createdTime: '2024-04-01T08:30:00', updatedTime: '2024-04-01T08:30:00', message: '', timestamp: Date.now() },
+    { friendId: '7', nickname: '李同事', avatar: '/src/assets/banMa/IMG_3982.PNG', groupId: 3, remark: '项目负责人', createdTime: '2024-04-15T11:00:00', updatedTime: '2024-04-15T11:00:00', message: '', timestamp: Date.now() }
 ]);
 
 // 好友申请
@@ -271,7 +271,7 @@ const getFriendsInGroup = (groupId) => {
 
 // 是否是好友
 const isFriend = (userId) => {
-    return friends.value.some(friend => friend.id === userId);
+    return friends.value.some(friend => friend.friendId === userId.toString());
 };
 
 // 是否有待处理的请求
@@ -346,10 +346,15 @@ const acceptRequest = (requestId) => {
     if (requestIndex !== -1) {
         const request = pendingRequests.value[requestIndex];
         friends.value.push({
-            id: request.from.id,
-            name: request.from.name,
+            friendId: request.from.id.toString(),
+            nickname: request.from.name,
             avatar: request.from.avatar,
-            groupId: null
+            groupId: null,
+            remark: '',
+            createdTime: new Date().toISOString(),
+            updatedTime: new Date().toISOString(),
+            message: '',
+            timestamp: Date.now()
         });
         pendingRequests.value.splice(requestIndex, 1);
         alert(`已同意 ${request.from.name} 的好友请求！`);
@@ -407,7 +412,7 @@ const editGroup = (group) => {
 // 删除好友
 const deleteFriend = (friendId) => {
     if (confirm('确定要删除这位好友吗？')) {
-        const index = friends.value.findIndex(f => f.id === friendId);
+        const index = friends.value.findIndex(f => f.friendId === friendId.toString());
         if (index !== -1) {
             friends.value.splice(index, 1);
             alert('已删除好友');

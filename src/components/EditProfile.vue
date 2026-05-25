@@ -93,9 +93,9 @@ onMounted(async () => {
                 <input ref="fileInput" type="file" accept="image/*" class="avatar-input" @change="handleFileChange">
             </div>
 
-            <div class="form-item le">
+            <div class="form-item name">
                 <label>昵称:</label>
-                <input type="text" v-model="userInfo.nickname" class="name">
+                <input type="text" v-model="userInfo.nickname" class="nameinput">
             </div>
 
             <div class="sex">
@@ -148,11 +148,6 @@ onMounted(async () => {
                 <input type="text" v-model="userInfo.email">
             </div>
 
-            <div class="form-item">
-                <label>简介:</label>
-                <textarea></textarea>
-            </div>
-
             <div class="button-group">
                 <button class="btn btn-cancel" @click="handleCancel">取消修改</button>
                 <button class="btn btn-save" @click="handleSave">保存修改</button>
@@ -166,7 +161,7 @@ onMounted(async () => {
 
 <style scoped>
 .edit-box {
-    width: 520px;
+    width: 500px;
     height: 410px;
     border-radius: 20px;
     display: flex;
@@ -199,16 +194,16 @@ h3 {
 }
 
 .form-item {
-    margin: 15px;
-    width: 450px;
+    margin: 20px;
+    width: 430px;
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 .avatar {
-    width: 70px;
-    height: 70px;
+    width: 80px;
+    height: 80px;
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid #e5e7eb;
@@ -230,12 +225,12 @@ h3 {
     margin-bottom: -100px;
 }
 
-.le {
-    width: 300px;
+.name {
+    width: 290px;
     margin-left: 160px;
 }
 
-.name {
+.nameinput {
     width: 200px;
 }
 
@@ -251,19 +246,13 @@ label {
     font-size: 18px;
 }
 
-input,
-textarea {
-    width: 350px;
+input{
+    width: 320px;
     padding: 10px;
     border: 1px solid #e0e0e0;
     outline: none;
     border-radius: 8px;
     font-size: 16px;
-}
-
-textarea {
-    resize: none;
-    height: 55px;
 }
 
 .button-group {
