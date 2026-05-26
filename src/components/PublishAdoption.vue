@@ -8,7 +8,7 @@
         <div class="form-container">
             <form @submit.prevent="submitForm" class="adoption-form">
                 <h2>发布宠物领养信息</h2>
-                
+
                 <!-- 选择宠物 -->
                 <div class="form-group">
                     <label>选择要领养的宠物 *</label>
@@ -49,21 +49,14 @@
                 <!-- 领养描述 -->
                 <div class="form-group">
                     <label>领养描述 *</label>
-                    <textarea v-model="form.description" required rows="4" placeholder="请描述宠物的性格、健康状况、领养要求等信息..." class="form-textarea"></textarea>
+                    <textarea v-model="form.adoptionDesc" required rows="4" placeholder="请描述宠物的性格、健康状况、领养要求等信息..."
+                        class="form-textarea"></textarea>
                 </div>
 
                 <!-- 领养地区 -->
                 <div class="form-group">
                     <label>领养地区 *</label>
-                    <select v-model="form.region" required class="form-select">
-                        <option value="">请选择领养地区</option>
-                        <option value="北京">北京</option>
-                        <option value="上海">上海</option>
-                        <option value="广州">广州</option>
-                        <option value="深圳">深圳</option>
-                        <option value="杭州">杭州</option>
-                        <option value="成都">成都</option>
-                    </select>
+                    <input type="text" v-model="form.area" required placeholder="请输入领养地区" class="form-input">
                 </div>
 
                 <!-- 是否无偿 -->
@@ -71,11 +64,11 @@
                     <label>是否无偿领养 *</label>
                     <div class="radio-group">
                         <label class="radio-label">
-                            <input type="radio" v-model="form.isFree" :value="true" required>
+                            <input type="radio" v-model="form.isFree" :value="1" required>
                             <span>无偿领养</span>
                         </label>
                         <label class="radio-label">
-                            <input type="radio" v-model="form.isFree" :value="false" required>
+                            <input type="radio" v-model="form.isFree" :value="0" required>
                             <span>有偿领养</span>
                         </label>
                     </div>
@@ -95,53 +88,25 @@
 </template>
 
 <script setup>
-import { reactive, ref, computed } from 'vue';
+import { reactive, ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-
+import { getFile, publishAdoption } from '@/api/adoption';
 const router = useRouter();
 
-// 当前用户ID
-const currentUserId = ref(1);
 
-// 宠物档案（模拟数据）- 当前用户的宠物
-const petArchive = ref([
-    {
-        id: 101,
-        name: '小橘',
-        type: '猫',
-        description: '可爱的橘猫，性格温顺，喜欢撒娇，已经打过疫苗。',
-        image: '/src/assets/banMa/IMG_3972.PNG',
-        ownerId: 1,
-        createdAt: new Date('2023-06-15').getTime()
-    },
-    {
-        id: 102,
-        name: '豆豆',
-        type: '狗',
-        description: '小型泰迪犬，非常可爱，不掉毛，适合公寓饲养。',
-        image: '/src/assets/banMa/IMG_3980.PNG',
-        ownerId: 1,
-        createdAt: new Date('2023-08-20').getTime()
-    },
-    {
-        id: 103,
-        name: '球球',
-        type: '仓鼠',
-        description: '可爱的金丝熊，毛色金黄，性格温顺，容易饲养。',
-        image: '',
-        ownerId: 1,
-        createdAt: new Date('2023-10-01').getTime()
-    },
-    {
-        id: 104,
-        name: '咪咪',
-        type: '猫',
-        description: '优雅的英短猫，蓝灰色毛发，性格高冷但很粘人。',
-        image: '/src/assets/banMa/IMG_3982.PNG',
-        ownerId: 1,
-        createdAt: new Date('2023-12-10').getTime()
+//宠物数据
+const petArchive = ref([]);
+
+async function fetchPetArchive() {
+    const response = await getFile();
+    if (response.code === "100000") {
+        petArchive.value = response.data;
     }
-]);
+}
+// 初始化时获取宠物档案
+onMounted(() => {
+    fetchPetArchive();
+});
 
 // 选中的宠物ID
 const selectedPetId = ref('');
@@ -151,14 +116,14 @@ const selectedPet = computed(() => {
     return petArchive.value.find(pet => pet.id === parseInt(selectedPetId.value));
 });
 
-// 表单数据
 const form = reactive({
     petName: '',
     petType: '',
-    description: '',
-    region: '',
-    isFree: true,
-    contact: ''
+    adoptionDesc: '',
+    area: '',
+    isFree: 1,
+    contact: '',
+    petPhoto: ''
 });
 
 // 选择宠物
@@ -166,37 +131,43 @@ const selectPet = () => {
     if (selectedPet.value) {
         form.petName = selectedPet.value.name;
         form.petType = selectedPet.value.type;
-        // 如果宠物有描述，可以自动填充到领养描述
-        if (selectedPet.value.description && !form.description) {
-            form.description = selectedPet.value.description;
+        form.petPhoto = selectedPet.value.image || '';
+        if (selectedPet.value.description && !form.adoptionDesc) {
+            form.adoptionDesc = selectedPet.value.description;
         }
     } else {
         form.petName = '';
         form.petType = '';
+        form.petPhoto = '';
     }
 };
 
 // 提交表单
-const submitForm = () => {
-    // 生成新的领养信息
-    const newAdoption = {
-        id: Date.now(),
-        ...form,
-        publisherId: currentUserId.value,
-        publishTime: Date.now(),
-        petId: parseInt(selectedPetId.value),
-        image: selectedPet.value?.image || ''
-    };
-    
-    // 存储到localStorage
-    const adoptionList = JSON.parse(localStorage.getItem('adoptionList') || '[]');
-    adoptionList.push(newAdoption);
-    localStorage.setItem('adoptionList', JSON.stringify(adoptionList));
-    
-    alert('发布成功！');
-    router.push('/adoption');
-};
+const submitForm = async () => {
+    if (!selectedPetId.value) {
+        alert('请选择宠物！');
+        return;
+    }
 
+    const adoptionData = {
+        petId: parseInt(selectedPetId.value),
+        petName: form.petName,
+        petType: form.petType,
+        adoptionDesc: form.adoptionDesc,
+        area: form.area,
+        isFree: form.isFree,
+        contact: form.contact,
+        petPhoto: form.petPhoto
+    };
+
+    const response = await publishAdoption(adoptionData);
+    if (response.code === "100000") {
+        alert('发布成功！');
+        router.push('/adoption');
+    } else {
+        alert('发布失败！');
+    }
+};
 // 返回列表
 const goBack = () => {
     router.push('/adoption');
@@ -233,7 +204,7 @@ const goBack = () => {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         background: #f0f7ff;
         transform: scale(1.05);
@@ -279,7 +250,7 @@ const goBack = () => {
     font-size: 16px;
     outline: none;
     box-sizing: border-box;
-    
+
     &:focus {
         border-color: #65A3F0;
     }
@@ -294,7 +265,7 @@ const goBack = () => {
     outline: none;
     cursor: pointer;
     box-sizing: border-box;
-    
+
     &:focus {
         border-color: #65A3F0;
     }
@@ -309,7 +280,7 @@ const goBack = () => {
     outline: none;
     resize: none;
     box-sizing: border-box;
-    
+
     &:focus {
         border-color: #65A3F0;
     }
@@ -377,13 +348,13 @@ const goBack = () => {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    
+
     input {
         width: 18px;
         height: 18px;
         cursor: pointer;
     }
-    
+
     span {
         font-size: 16px;
         color: #555;
@@ -401,7 +372,7 @@ const goBack = () => {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         transform: scale(1.02);
         box-shadow: 0 4px 15px rgba(101, 163, 240, 0.4);
