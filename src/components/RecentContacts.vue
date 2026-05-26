@@ -16,16 +16,16 @@
                 @click="handleContactClick(contact.friendId)"
             >
                 <div class="contact-header">
-                    <img :src="contact.avatar || '/src/assets/avator.png'" alt="头像" class="contact-avatar">
+                    <img :src="contact.friendAvatar || '/src/assets/avator.png'" alt="头像" class="contact-avatar">
                     <div class="contact-info">
                         <div class="contact-name-row">
-                            <h4 class="contact-name">{{ contact.remark || contact.nickname }}</h4>
+                            <h4 class="contact-name">{{ contact.friendName }}</h4>
                             <span v-if="contact.unreadCount > 0" class="unread-badge">{{ contact.unreadCount }}</span>
                         </div>
                         <p class="contact-message">{{ contact.lastMessage }}</p>
                     </div>
                     <div class="contact-time">
-                        <span>{{ formatTime(contact.timestamp) }}</span>
+                        <span>{{ formatTime(contact.lastMessageTime) }}</span>
                     </div>
                 </div>
             </div>
@@ -49,11 +49,12 @@ const loadRecentContacts = async () => {
         loading.value = true;
         const res = await getPrivateChatContacts();
         if (res.code === '100000' && res.data) {
-            contacts.value = res.data.map(contact => ({
-                ...contact,
-                expanded: false
-            }));
+            contacts.value = res.data;
         }
+        else if (res.code === '10002') {
+            alert(res.message || '用户未登录或登录已过期');
+        }
+
     } catch (error) {
         console.error('加载最近联系人失败:', error);
     } finally {
@@ -179,69 +180,7 @@ onMounted(() => {
     transition: transform 0.3s ease;
 }
 
-.contact-expanded {
-    background: #fafafa;
-    padding: 15px;
-    border-top: 1px solid #eee;
-}
 
-.conversation-preview {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.message-bubble {
-    max-width: 70%;
-    padding: 10px 15px;
-    border-radius: 15px;
-    font-size: 14px;
-    
-    &.received {
-        align-self: flex-start;
-        background: white;
-        border-radius: 15px 15px 15px 5px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-    }
-    
-    &.sent {
-        align-self: flex-end;
-        background: linear-gradient(to right, #f895c8, #ffd4eb);
-        color: white;
-        border-radius: 15px 15px 5px 15px;
-    }
-    
-    p {
-        margin: 0;
-        word-break: break-word;
-    }
-    
-    .message-time {
-        display: block;
-        font-size: 11px;
-        margin-top: 5px;
-        opacity: 0.7;
-    }
-}
-
-.chat-now-btn {
-    width: 100%;
-    padding: 12px;
-    background: linear-gradient(to right, #f895c8, #ffd4eb);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s;
-    
-    &:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-    }
-}
 
 .empty-state {
     text-align: center;

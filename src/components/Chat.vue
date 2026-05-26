@@ -3,9 +3,9 @@
         <header class="header">
             <div class="header-left">
                 <button class="back-btn" @click="goBack">← 返回好友列表</button>
-                <img :src="friend?.avatar || '/src/assets/avator.png'" alt="头像" class="friend-avatar">
+                <img :src="friend?.friendAvatar || '/src/assets/avator.png'" alt="头像" class="friend-avatar">
                 <div class="friend-info">
-                    <h3 class="friend-name">{{ friend?.remark || friend?.nickname }}</h3>
+                    <h3 class="friend-name">{{ friend?.friendName }}</h3>
                     <span class="friend-status">在线</span>
                 </div>
             </div>
@@ -18,14 +18,14 @@
                 <p>加载消息中...</p>
             </div>
             <div v-else v-for="msg in messages" :key="msg.id" :class="['message', msg.isMine ? 'mine' : 'friend']">
-                <img :src="msg.isMine ? currentUserAvatar : friend?.avatar || '/src/assets/avator.png'" alt="头像" class="msg-avatar">
+                <img :src="msg.isMine ? currentUserAvatar : friend?.friendAvatar || '/src/assets/avator.png'" alt="头像" class="msg-avatar">
                 <div class="msg-content">
                     <p class="msg-text">{{ msg.content }}</p>
                     <span class="msg-time">{{ formatTime(msg.time) }}</span>
                 </div>
             </div>
             <div v-if="!loading && messages.length === 0" class="empty-messages">
-                <p>开始与 {{ friend?.remark || friend?.nickname }} 的聊天吧！</p>
+                <p>开始与 {{ friend?.friendName }} 的聊天吧！</p>
             </div>
         </div>
 
@@ -92,14 +92,23 @@ const loadChatHistory = async () => {
         loading.value = true;
         const friendId = parseInt(route.params.friendId);
         const res = await getChatHistory(friendId);
-        if (res.code === '100000' && res.data) {
+        if (res.code === '100000' && res.data?.messages) {
             // 转换消息格式
-            messages.value = res.data.map(msg => ({
+            messages.value = res.data.messages.map(msg => ({
                 id: msg.id,
                 content: msg.content,
                 isMine: msg.senderId === currentUserId.value,
-                time: msg.timestamp
+                time: msg.createdTime
             }));
+        }
+        else if (res.code === '10001') {
+            alert(res.message || '参数错误');
+        }
+        else if (res.code === '50001') {
+            alert(res.message || '目标用户不存在');
+        }
+        else if (res.code === '50008') {
+            alert(res.message || '你们不是好友');
         }
     } catch (error) {
         console.error('加载聊天记录失败:', error);
@@ -131,14 +140,22 @@ const sendMessage = async () => {
             // 添加发送成功的消息
             messages.value.push({
                 id: res.data?.id || Date.now(),
-                content: content,
+                content: res.data?.content || content,
                 isMine: true,
-                time: Date.now()
+                time: res.data?.createdTime || Date.now()
             });
             inputMessage.value = '';
             scrollToBottom();
+        } else if (res.code === '10001') {
+            alert(res.message || '参数错误');
+        } else if (res.code === '20003') {
+            alert(res.message || '账号或密码错误');
+        } else if (res.code === '50001') {
+            alert(res.message || '目标用户不存在');
+        } else if (res.code === '50008') {
+            alert(res.message || '你们不是好友');
         } else {
-            alert('发送失败，请重试');
+            alert(res.message || '发送失败，请重试');
         }
     } catch (error) {
         console.error('发送消息失败:', error);
@@ -166,7 +183,16 @@ const goBack = () => {
 const markAsRead = async () => {
     try {
         const friendId = parseInt(route.params.friendId);
-        await markChatAsRead(friendId);
+        const res = await markChatAsRead(friendId);
+        if (res.code === '100000') {
+            alert('标记成功');
+        }   
+        else if (res.code === '50001') {
+            alert(res.message || '目标用户不存在');
+        }
+        else if (res.code === '50008') {
+            alert(res.message || '你们不是好友');
+        }
     } catch (error) {
         console.error('标记已读失败:', error);
     }
