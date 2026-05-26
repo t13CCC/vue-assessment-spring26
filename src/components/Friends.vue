@@ -299,20 +299,6 @@ const loadNotifications = async () => {
     }
 };
 
-// 加载最近联系人
-const loadRecentContacts = async () => {
-    try {
-        const res = await getPrivateChatContacts();
-        if (res.code === '100000' && res.data) {
-            recentContacts.value = res.data;
-        }
-        else if (res.code === '10002') {
-            console.error('用户未登录或登录已过期', res.message);
-        }
-    } catch (error) {
-        console.error('加载最近联系人失败:', error);
-    }
-};
 
 // 加载最近联系人
 const loadRecentContacts = async () => {
