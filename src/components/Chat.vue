@@ -5,7 +5,7 @@
                 <button class="back-btn" @click="goBack">← 返回好友列表</button>
                 <img :src="friend?.avatar || '/src/assets/avator.png'" alt="头像" class="friend-avatar">
                 <div class="friend-info">
-                    <h3 class="friend-name">{{ friend?.name }}</h3>
+                    <h3 class="friend-name">{{ friend?.remark || friend?.nickname }}</h3>
                     <span class="friend-status">在线</span>
                 </div>
             </div>
@@ -14,12 +14,18 @@
 
         <!-- 消息列表 -->
         <div class="messages-container" ref="messagesContainer">
-            <div v-for="msg in messages" :key="msg.id" :class="['message', msg.isMine ? 'mine' : 'friend']">
+            <div v-if="loading" class="loading-messages">
+                <p>加载消息中...</p>
+            </div>
+            <div v-else v-for="msg in messages" :key="msg.id" :class="['message', msg.isMine ? 'mine' : 'friend']">
                 <img :src="msg.isMine ? currentUserAvatar : friend?.avatar || '/src/assets/avator.png'" alt="头像" class="msg-avatar">
                 <div class="msg-content">
                     <p class="msg-text">{{ msg.content }}</p>
                     <span class="msg-time">{{ formatTime(msg.time) }}</span>
                 </div>
+            </div>
+            <div v-if="!loading && messages.length === 0" class="empty-messages">
+                <p>开始与 {{ friend?.remark || friend?.nickname }} 的聊天吧！</p>
             </div>
         </div>
 
@@ -32,14 +38,17 @@
                 class="message-input"
                 @keyup.enter="sendMessage"
             >
-            <button class="send-btn" @click="sendMessage">发送</button>
+            <button class="send-btn" @click="sendMessage" :disabled="sending">
+                {{ sending ? '发送中...' : '发送' }}
+            </button>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, onMounted, nextTick, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { getChatHistory, sendPrivateMessage, markChatAsRead, getFriends } from '@/api/friends';
 
 const router = useRouter();
 const route = useRoute();
@@ -52,87 +61,100 @@ const currentUserAvatar = ref('/src/assets/avator.png');
 const friend = ref(null);
 
 // 消息列表
-const messages = ref([
-    { id: 1, content: '你好！', isMine: false, time: Date.now() - 3600000 },
-    { id: 2, content: '你好！有什么事吗？', isMine: true, time: Date.now() - 3500000 },
-    { id: 3, content: '我想问问你家猫咪的情况', isMine: false, time: Date.now() - 3400000 },
-    { id: 4, content: '好的呀，小橘很可爱的', isMine: true, time: Date.now() - 3300000 },
-    { id: 5, content: '我想领养一只猫咪', isMine: false, time: Date.now() - 3200000 },
-    { id: 6, content: '那太好了！我们可以约个时间见面看看', isMine: true, time: Date.now() - 3100000 }
-]);
+const messages = ref([]);
 
 // 输入消息
 const inputMessage = ref('');
 
+// 加载状态
+const loading = ref(false);
+const sending = ref(false);
+
 // 消息容器引用
 const messagesContainer = ref(null);
 
-// 模拟好友数据
-const friendsData = [
-    { id: 2, name: '爱猫达人', avatar: '/src/assets/banMa/IMG_3972.PNG' },
-    { id: 3, name: '狗狗控', avatar: '/src/assets/banMa/IMG_3973.PNG' },
-    { id: 4, name: '小明', avatar: '/src/assets/banMa/IMG_3974.PNG' },
-    { id: 5, name: '小红', avatar: '/src/assets/banMa/IMG_3975.PNG' },
-    { id: 6, name: '张同事', avatar: '/src/assets/banMa/IMG_3980.PNG' },
-    { id: 7, name: '李同事', avatar: '/src/assets/banMa/IMG_3982.PNG' }
-];
-
 // 获取好友信息
-const getFriend = () => {
-    const friendId = parseInt(route.params.friendId);
-    friend.value = friendsData.find(f => f.id === friendId);
+const getFriendInfo = async () => {
+    try {
+        const res = await getFriends();
+        if (res.code === '100000' && res.data) {
+            const friendId = parseInt(route.params.friendId);
+            friend.value = res.data.find(f => f.friendId === friendId.toString());
+        }
+    } catch (error) {
+        console.error('获取好友信息失败:', error);
+    }
+};
+
+// 加载聊天记录
+const loadChatHistory = async () => {
+    try {
+        loading.value = true;
+        const friendId = parseInt(route.params.friendId);
+        const res = await getChatHistory(friendId);
+        if (res.code === '100000' && res.data) {
+            // 转换消息格式
+            messages.value = res.data.map(msg => ({
+                id: msg.id,
+                content: msg.content,
+                isMine: msg.senderId === currentUserId.value,
+                time: msg.timestamp
+            }));
+        }
+    } catch (error) {
+        console.error('加载聊天记录失败:', error);
+    } finally {
+        loading.value = false;
+        scrollToBottom();
+    }
 };
 
 // 格式化时间
 const formatTime = (timestamp) => {
+    if (!timestamp) return '';
     const date = new Date(timestamp);
     return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
 
 // 发送消息
-const sendMessage = () => {
-    if (!inputMessage.value.trim()) return;
+const sendMessage = async () => {
+    if (!inputMessage.value.trim() || sending.value) return;
     
-    messages.value.push({
-        id: Date.now(),
-        content: inputMessage.value.trim(),
-        isMine: true,
-        time: Date.now()
-    });
+    const friendId = parseInt(route.params.friendId);
+    const content = inputMessage.value.trim();
     
-    inputMessage.value = '';
+    sending.value = true;
     
-    // 自动滚动到底部
+    try {
+        const res = await sendPrivateMessage(friendId, content);
+        if (res.code === '100000') {
+            // 添加发送成功的消息
+            messages.value.push({
+                id: res.data?.id || Date.now(),
+                content: content,
+                isMine: true,
+                time: Date.now()
+            });
+            inputMessage.value = '';
+            scrollToBottom();
+        } else {
+            alert('发送失败，请重试');
+        }
+    } catch (error) {
+        console.error('发送消息失败:', error);
+        alert('发送失败，请重试');
+    } finally {
+        sending.value = false;
+    }
+};
+
+// 滚动到底部
+const scrollToBottom = () => {
     nextTick(() => {
         if (messagesContainer.value) {
             messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
         }
     });
-    
-    // 模拟对方回复
-    setTimeout(() => {
-        const replies = [
-            '好的，我知道了',
-            '嗯嗯，没问题',
-            '太棒了！',
-            '我也觉得不错',
-            '可以呀，什么时候方便？',
-            '好的，那我们约个时间'
-        ];
-        const randomReply = replies[Math.floor(Math.random() * replies.length)];
-        messages.value.push({
-            id: Date.now(),
-            content: randomReply,
-            isMine: false,
-            time: Date.now()
-        });
-        
-        nextTick(() => {
-            if (messagesContainer.value) {
-                messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
-            }
-        });
-    }, 1500);
 };
 
 // 返回好友列表
@@ -140,14 +162,28 @@ const goBack = () => {
     router.push('/friends');
 };
 
+// 标记为已读
+const markAsRead = async () => {
+    try {
+        const friendId = parseInt(route.params.friendId);
+        await markChatAsRead(friendId);
+    } catch (error) {
+        console.error('标记已读失败:', error);
+    }
+};
+
+// 监听路由变化
+watch(() => route.params.friendId, async () => {
+    await getFriendInfo();
+    await loadChatHistory();
+    await markAsRead();
+});
+
 // 初始化
-onMounted(() => {
-    getFriend();
-    nextTick(() => {
-        if (messagesContainer.value) {
-            messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight;
-        }
-    });
+onMounted(async () => {
+    await getFriendInfo();
+    await loadChatHistory();
+    await markAsRead();
 });
 </script>
 
