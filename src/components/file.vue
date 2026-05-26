@@ -13,20 +13,20 @@
         <div class="adoption-list" v-if="pets.length > 0">
             <div v-for="pet in pets" :key="pet.id" class="adoption-card">
                 <div class="card-image">
-                    <img v-if="pet.photo" :src="pet.photo" :alt="pet.name" />
-                    <span v-else class="pet-image-placeholder">{{ pet.name.charAt(0) }}</span>
+                    <img v-if="pet.petPhoto" :src="pet.petPhoto" :alt="pet.petName" />
+                    <span v-else class="pet-image-placeholder">{{ pet.petName.charAt(0) }}</span>
                 </div>
                 <div class="card-content">
-                    <h3 class="pet-name">{{ pet.name }}</h3>
+                    <h3 class="pet-name">{{ pet.petName }}</h3>
                     <div class="pet-info">
-                        <span class="tag">{{ pet.type }}</span>
-                        <span class="tag">{{ pet.breed }}</span>
+                        <span class="tag">{{ pet.petType }}</span>
+                        <span class="tag">{{ pet.petBreed }}</span>
                     </div>
                     <div class="pet-details">
-                        <p><strong>性别：</strong>{{ pet.gender }}</p>
-                        <p><strong>体重：</strong>{{ pet.weight }} kg</p>
-                        <p><strong>毛色：</strong>{{ pet.color }}</p>
-                        <p><strong>生日：</strong>{{ pet.birthday }}</p>
+                        <p><strong>性别：</strong>{{ pet.petGender }}</p>
+                        <p><strong>体重：</strong>{{ pet.petWeight }} kg</p>
+                        <p><strong>毛色：</strong>{{ pet.petColor }}</p>
+                        <p><strong>生日：</strong>{{ pet.petBirthday }}</p>
                     </div>
                     <div class="pet-tags">
                         <span class="pet-tag" v-for="tag in pet.tags" :key="tag">{{ tag }}</span>
@@ -55,11 +55,11 @@
                             <div class="form-row">
                                 <div class="form-group half-width">
                                     <label>宠物名称</label>
-                                    <input type="text" v-model="formData.name" required />
+                                    <input type="text" v-model="formData.petName" required />
                                 </div>
                                 <div class="form-group half-width">
                                     <label>宠物类型</label>
-                                    <select v-model="formData.type" required>
+                                    <select v-model="formData.petType" required>
                                         <option value="">请选择</option>
                                         <option v-for="opt in petTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
                                     </select>
@@ -68,41 +68,43 @@
 
                             <div class="form-group">
                                 <label>照片</label>
-                                <div class="upload-area" @click="triggerUpload" @dragover.prevent @drop.prevent="handleDrop">
-                                    <input type="file" id="photo-upload" accept="image/*" @change="handlePhotoUpload" style="display: none;">
+                                <div class="upload-area" @click="triggerUpload" @dragover.prevent
+                                    @drop.prevent="handleDrop">
+                                    <input type="file" id="photo-upload" accept="image/*" @change="handlePhotoUpload"
+                                        style="display: none;">
                                     <div class="upload-icon">📷</div>
-                                    <div class="upload-text" v-if="!formData.photo">点击或拖拽上传图片</div>
+                                    <div class="upload-text" v-if="!formData.petPhoto">点击或拖拽上传图片</div>
                                     <div class="upload-text" v-else>已选择图片</div>
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label>品种</label>
-                                <input type="text" v-model="formData.breed" />
+                                <input type="text" v-model="formData.petBreed" />
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group half-width">
                                     <label>性别</label>
-                                    <select v-model="formData.gender" required>
+                                    <select v-model="formData.petGender" required>
                                         <option value="">请选择</option>
                                         <option v-for="opt in genderOptions" :key="opt" :value="opt">{{ opt }}</option>
                                     </select>
                                 </div>
                                 <div class="form-group half-width">
                                     <label>体重 (kg)</label>
-                                    <input type="number" v-model.number="formData.weight" step="0.1" min="0" />
+                                    <input type="number" v-model.number="formData.petWeight" step="0.1" min="0" />
                                 </div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group half-width">
                                     <label>毛色</label>
-                                    <input type="text" v-model="formData.color" />
+                                    <input type="text" v-model="formData.petColor" />
                                 </div>
                                 <div class="form-group half-width">
                                     <label>生日</label>
-                                    <input type="date" v-model="formData.birthday" required />
+                                    <input type="date" v-model="formData.petBirthday" required />
                                 </div>
                             </div>
 
@@ -139,6 +141,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { downloadFile, createPet, updatePet, deletePet as deletePetApi, createPetTag, deletePetTag, getPetTags } from '@/api/file'
 
 const router = useRouter()
 
@@ -156,7 +159,7 @@ function handlePhotoUpload(event) {
     if (file) {
         const reader = new FileReader()
         reader.onload = (e) => {
-            formData.photo = e.target.result
+            formData.petPhoto = e.target.result
         }
         reader.readAsDataURL(file)
     }
@@ -167,7 +170,7 @@ function handleDrop(event) {
     if (file && file.type.startsWith('image/')) {
         const reader = new FileReader()
         reader.onload = (e) => {
-            formData.photo = e.target.result
+            formData.petPhoto = e.target.result
         }
         reader.readAsDataURL(file)
     }
@@ -176,33 +179,44 @@ function handleDrop(event) {
 const petTypeOptions = ['猫', '狗', '其他']
 const genderOptions = ['公', '母']
 
-const pets = ref([
-    {
-        id: 1,
-        name: 'Tommy',
-        type: '猫',
-        photo: '',
-        breed: '英短',
-        gender: '公',
-        weight: 4.5,
-        color: '蓝白',
-        birthday: '2021-04-27',
-        tags: ['可爱', '粘人', '调皮']
-    },
-    {
-        id: 2,
-        name: 'Lucky',
-        type: '狗',
-        photo: '',
-        breed: '金毛',
-        gender: '母',
-        weight: 25,
-        color: '金黄色',
-        birthday: '2020-06-15',
-        tags: ['温顺', '聪明', '忠诚']
-    }
-])
+const pets = ref([])
 
+const getPets = async () => {
+    try {
+        const response = await downloadFile()
+        if (response.code === "100000") {
+            pets.value = response.data || []
+            // 为每个宠物获取标签
+            for (const pet of pets.value) {
+                pet.tags = await fetchPetTags(pet.id)
+            }
+        }
+    } catch (err) {
+        alert(err.message || '获取宠物档案失败')
+    }
+}
+onMounted(async () => {
+    await getPets()
+    await loadAllTags()
+})
+
+// 加载所有标签到预设列表
+async function loadAllTags() {
+    try {
+        const response = await getPetTags({ pageNum: 1, pageSize: 100 })
+        if (response.code === "100000") {
+            const tagList = response.data.data || []
+            tagList.forEach(tag => {
+                const tagName = tag.tagName || tag.name
+                if (tagName && !existingTags.value.includes(tagName)) {
+                    existingTags.value.push(tagName)
+                }
+            })
+        }
+    } catch (err) {
+        console.error('加载标签列表失败:', err)
+    }
+}
 const showModal = ref(false)
 const isEditing = ref(false)
 const newTag = ref('')
@@ -212,14 +226,14 @@ let nextId = 3
 
 const formData = reactive({
     id: null,
-    name: '',
-    type: '',
-    photo: '',
-    breed: '',
-    gender: '',
-    weight: null,
-    color: '',
-    birthday: '',
+    petName: '',
+    petType: '',
+    petPhoto: '',
+    petBreed: '',
+    petGender: '',
+    petWeight: null,
+    petColor: '',
+    petBirthday: '',
     tags: []
 })
 
@@ -230,38 +244,72 @@ const availableTags = computed(() => {
 function createEmptyForm() {
     return {
         id: null,
-        name: '',
-        type: '',
-        photo: '',
-        breed: '',
-        gender: '',
-        weight: null,
-        color: '',
-        birthday: '',
+        petName: '',
+        petType: '',
+        petPhoto: '',
+        petBreed: '',
+        petGender: '',
+        petWeight: null,
+        petColor: '',
+        petBirthday: '',
         tags: []
     }
 }
-
-function resetForm() {
-    Object.assign(formData, createEmptyForm())
-    newTag.value = ''
-}
-
 function openAddPetModal() {
     isEditing.value = false
     resetForm()
     showModal.value = true
 }
+function resetForm() {
+    Object.assign(formData, createEmptyForm())
+    newTag.value = ''
+}
 
-function editPet(pet) {
+
+
+async function editPet(pet) {
     isEditing.value = true
-    Object.assign(formData, { ...pet, tags: [...pet.tags] })
+    // 如果宠物数据中没有 tags，从后端获取
+    let tags = []
+    if (pet.tags && Array.isArray(pet.tags)) {
+        tags = [...pet.tags]
+    } else {
+        // 从后端获取宠物标签
+        tags = await fetchPetTags(pet.id)
+    }
+    Object.assign(formData, { ...pet, tags })
     showModal.value = true
 }
 
-function deletePet(id) {
+// 获取宠物的标签列表（通过分页查询所有标签然后过滤）
+async function fetchPetTags(petId) {
+    try {
+        const response = await getPetTags({ pageNum: 1, pageSize: 100 })
+        if (response.code === "100000") {
+            const allTags = response.data.data || []
+            return allTags
+                .filter(tag => tag.petId === petId)
+                .map(tag => tag.tagName || tag.name)
+        }
+    } catch (err) {
+        console.error('获取宠物标签失败:', err)
+    }
+    return []
+}
+
+async function deletePet(id) {
     if (confirm('确定要删除这个宠物档案吗？')) {
-        pets.value = pets.value.filter(pet => pet.id !== id)
+        try {
+            const response = await deletePetApi(id)
+            if (response.code === "100000") {
+                pets.value = pets.value.filter(pet => pet.id !== id)
+                alert('删除成功')
+            } else {
+                alert(response.message || '删除失败')
+            }
+        } catch (err) {
+            alert(err.message || '删除失败')
+        }
     }
 }
 
@@ -270,16 +318,84 @@ function closeModal() {
     resetForm()
 }
 
-function savePet() {
-    if (isEditing.value) {
-        const index = pets.value.findIndex(pet => pet.id === formData.id)
-        if (index !== -1) {
-            pets.value[index] = { ...formData }
+async function savePet() {
+    try {
+        if (isEditing.value) {
+            // 编辑模式：调用更新 API
+            const response = await updatePet(formData)
+            if (response.code === "100000") {
+                const index = pets.value.findIndex(pet => pet.id === formData.id)
+                if (index !== -1) {
+                    pets.value[index] = { ...formData }
+                }
+                // 更新标签：先删除旧标签，再添加新标签
+                await updatePetTags(formData.id, formData.tags)
+                alert('修改成功')
+            } else {
+                alert(response.message || '修改失败')
+            }
+        } else {
+            // 新建模式：调用创建 API
+            const response = await createPet(formData)
+            if (response.code === "100000") {
+                const newPetId = response.data.id
+                pets.value.push({ ...formData, id: newPetId })
+                // 创建标签
+                await createPetTags(newPetId, formData.tags)
+                alert('创建成功')
+            } else {
+                alert(response.message || '创建失败')
+            }
         }
-    } else {
-        pets.value.push({ ...formData, id: nextId++ })
+        closeModal()
+    } catch (err) {
+        alert(err.message || '保存失败')
     }
-    closeModal()
+}
+
+// 创建宠物标签
+async function createPetTags(petId, tags) {
+    for (const tagName of tags) {
+        try {
+            await createPetTag(petId, tagName)
+        } catch (err) {
+            console.error('创建标签失败:', tagName, err)
+        }
+    }
+}
+
+// 更新宠物标签（先删除所有旧标签，再添加新标签）
+async function updatePetTags(petId, newTags) {
+    try {
+        // 先获取所有标签，然后过滤出当前宠物的标签
+        const response = await getPetTags({ pageNum: 1, pageSize: 100 })
+        if (response.code === "100000") {
+            const allTags = response.data.data || []
+            const petOldTags = allTags.filter(tag => tag.petId === petId)
+
+            // 删除所有旧标签
+            for (const tag of petOldTags) {
+                if (tag.tagId || tag.id) {
+                    try {
+                        await deletePetTag(tag.tagId || tag.id)
+                    } catch (err) {
+                        console.error('删除标签失败:', tag.tagName, err)
+                    }
+                }
+            }
+        }
+
+        // 添加新标签
+        for (const tagName of newTags) {
+            try {
+                await createPetTag(petId, tagName)
+            } catch (err) {
+                console.error('更新标签失败:', tagName, err)
+            }
+        }
+    } catch (err) {
+        console.error('更新宠物标签失败:', err)
+    }
 }
 
 function addTag() {
@@ -302,24 +418,6 @@ function addExistingTag(tag) {
         formData.tags.push(tag)
     }
 }
-
-function checkBirthdayReminders() {
-    const today = new Date()
-    const todayMonth = today.getMonth() + 1
-    const todayDay = today.getDate()
-
-    pets.value.forEach(pet => {
-        const [, month, day] = pet.birthday.split('-').map(Number)
-        if (month === todayMonth && day === todayDay) {
-            const age = today.getFullYear() - parseInt(pet.birthday.split('-')[0])
-            alert(`🎉 你的宠物${pet.name}今天${age}岁啦！`)
-        }
-    })
-}
-
-onMounted(() => {
-    checkBirthdayReminders()
-})
 </script>
 
 <style lang="scss" scoped>
@@ -359,7 +457,7 @@ onMounted(() => {
     font-size: 14px;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         background: rgba(255, 255, 255, 0.3);
         transform: scale(1.05);
@@ -386,7 +484,7 @@ onMounted(() => {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         background: #f0f7ff;
         transform: scale(1.05);
@@ -406,7 +504,7 @@ onMounted(() => {
     overflow: hidden;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
     transition: all 0.3s;
-    
+
     &:hover {
         transform: translateY(-5px);
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
@@ -420,7 +518,7 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    
+
     img {
         width: 100%;
         height: 100%;
@@ -527,17 +625,17 @@ onMounted(() => {
     font-size: 14px;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &.edit-btn {
         background: #e0e7ff;
         color: #4338ca;
     }
-    
+
     &.delete-btn {
         background: #fee2e2;
         color: #dc2626;
     }
-    
+
     &:hover {
         opacity: 0.8;
         transform: scale(1.02);
@@ -771,7 +869,7 @@ onMounted(() => {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         background: #e5e7eb;
         transform: scale(1.02);
@@ -789,7 +887,7 @@ onMounted(() => {
     cursor: pointer;
     transition: all 0.3s;
     box-shadow: 0 4px 12px rgba(101, 163, 240, 0.3);
-    
+
     &:hover {
         background: linear-gradient(to right, #4a9ef0, #65A3F0);
         transform: scale(1.02);

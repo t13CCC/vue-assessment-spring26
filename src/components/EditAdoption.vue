@@ -10,38 +10,31 @@
 
         <div class="form-container" v-if="adoption">
             <form @submit.prevent="submitForm" class="adoption-form">
-                <h2>修改宠物信息</h2>
-                
-                <!-- 宠物名称 -->
+                <h2>修改领养信息</h2>
+
+                <!-- 宠物名称（只读） -->
                 <div class="form-group">
-                    <label>宠物名称 *</label>
-                    <input type="text" v-model="form.petName" required placeholder="请输入宠物名称" class="form-input">
+                    <label>宠物名称</label>
+                    <input type="text" v-model="form.petName" readonly class="form-input readonly">
                 </div>
 
-                <!-- 宠物类型 -->
+                <!-- 宠物类型（只读） -->
                 <div class="form-group">
-                    <label>宠物类型 *</label>
-                    <select v-model="form.petType" required class="form-select">
-                        <option value="">请选择宠物类型</option>
-                        <option value="猫">猫</option>
-                        <option value="狗">狗</option>
-                        <option value="鸟">鸟</option>
-                        <option value="兔子">兔子</option>
-                        <option value="仓鼠">仓鼠</option>
-                        <option value="其他">其他</option>
-                    </select>
+                    <label>宠物类型</label>
+                    <input type="text" v-model="form.petType" readonly class="form-input readonly">
                 </div>
 
                 <!-- 领养描述 -->
                 <div class="form-group">
                     <label>领养描述 *</label>
-                    <textarea v-model="form.description" required rows="4" placeholder="请描述宠物的性格、健康状况、领养要求等信息..." class="form-textarea"></textarea>
+                    <textarea v-model="form.adoptionDesc" required rows="4" placeholder="请描述宠物的性格、健康状况、领养要求等信息..."
+                        class="form-textarea"></textarea>
                 </div>
 
                 <!-- 领养地区 -->
                 <div class="form-group">
                     <label>领养地区 *</label>
-                    <select v-model="form.region" required class="form-select">
+                    <select v-model="form.area" required class="form-select">
                         <option value="">请选择领养地区</option>
                         <option value="北京">北京</option>
                         <option value="上海">上海</option>
@@ -57,11 +50,11 @@
                     <label>是否无偿领养 *</label>
                     <div class="radio-group">
                         <label class="radio-label">
-                            <input type="radio" v-model="form.isFree" :value="true" required>
+                            <input type="radio" v-model="form.isFree" :value="1" required>
                             <span>无偿领养</span>
                         </label>
                         <label class="radio-label">
-                            <input type="radio" v-model="form.isFree" :value="false" required>
+                            <input type="radio" v-model="form.isFree" :value="0" required>
                             <span>有偿领养</span>
                         </label>
                     </div>
@@ -87,6 +80,7 @@
 <script setup>
 import { reactive, ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { getAdoptionById, putAdoptionDetail } from '@/api/adoption';
 
 const router = useRouter();
 const route = useRoute();
@@ -95,143 +89,63 @@ const route = useRoute();
 const form = reactive({
     petName: '',
     petType: '',
-    description: '',
-    region: '',
-    isFree: true,
+    adoptionDesc: '',
+    area: '',
+    isFree: 1,
     contact: ''
 });
 
 // 当前领养信息
 const adoption = ref(null);
 
-// 模拟数据
-const adoptionList = [
-    {
-        id: 1,
-        petName: '小橘',
-        petType: '猫',
-        description: '可爱的橘猫，性格温顺，喜欢撒娇，已经打过疫苗，希望找到一个温暖的家。',
-        region: '北京',
-        isFree: true,
-        contact: '13800138001',
-        publisherId: 1,
-        publishTime: new Date('2024-01-15').getTime(),
-        image: '/src/assets/banMa/IMG_3972.PNG'
-    },
-    {
-        id: 2,
-        petName: '旺财',
-        petType: '狗',
-        description: '活泼好动的金毛犬，非常聪明，会握手、坐下等基本指令。',
-        region: '上海',
-        isFree: false,
-        contact: '13900139002',
-        publisherId: 2,
-        publishTime: new Date('2024-01-14').getTime(),
-        image: '/src/assets/banMa/IMG_3973.PNG'
-    },
-    {
-        id: 3,
-        petName: '球球',
-        petType: '仓鼠',
-        description: '可爱的金丝熊，毛色金黄，性格温顺，容易饲养。',
-        region: '广州',
-        isFree: true,
-        contact: '13700137003',
-        publisherId: 3,
-        publishTime: new Date('2024-01-13').getTime()
-    },
-    {
-        id: 4,
-        petName: '飞飞',
-        petType: '鸟',
-        description: '会说话的鹦鹉，毛色鲜艳，非常聪明可爱。',
-        region: '深圳',
-        isFree: false,
-        contact: '13600136004',
-        publisherId: 4,
-        publishTime: new Date('2024-01-12').getTime(),
-        image: '/src/assets/banMa/IMG_3974.PNG'
-    },
-    {
-        id: 5,
-        petName: '雪球',
-        petType: '兔子',
-        description: '雪白的垂耳兔，性格温顺，喜欢吃胡萝卜。',
-        region: '杭州',
-        isFree: true,
-        contact: '13500135005',
-        publisherId: 5,
-        publishTime: new Date('2024-01-11').getTime(),
-        image: '/src/assets/banMa/IMG_3975.PNG'
-    },
-    {
-        id: 6,
-        petName: '豆豆',
-        petType: '狗',
-        description: '小型泰迪犬，非常可爱，不掉毛，适合公寓饲养。',
-        region: '成都',
-        isFree: false,
-        contact: '13400134006',
-        publisherId: 1,
-        publishTime: new Date('2024-01-10').getTime(),
-        image: '/src/assets/banMa/IMG_3980.PNG'
-    },
-    {
-        id: 7,
-        petName: '咪咪',
-        petType: '猫',
-        description: '优雅的英短猫，蓝灰色毛发，性格高冷但很粘人。',
-        region: '北京',
-        isFree: true,
-        contact: '13300133007',
-        publisherId: 6,
-        publishTime: new Date('2024-01-09').getTime(),
-        image: '/src/assets/banMa/IMG_3982.PNG'
-    },
-    {
-        id: 8,
-        petName: '布丁',
-        petType: '仓鼠',
-        description: '布丁仓鼠，金黄色的毛发，非常可爱活泼。',
-        region: '上海',
-        isFree: true,
-        contact: '13200132008',
-        publisherId: 7,
-        publishTime: new Date('2024-01-08').getTime(),
-        image: '/src/assets/banMa/IMG_3983.PNG'
-    }
-];
-
 // 初始化表单数据
-onMounted(() => {
+onMounted(async () => {
     const id = parseInt(route.params.id);
-    adoption.value = adoptionList.find(item => item.id === id);
-    
-    if (adoption.value) {
-        form.petName = adoption.value.petName;
-        form.petType = adoption.value.petType;
-        form.description = adoption.value.description;
-        form.region = adoption.value.region;
-        form.isFree = adoption.value.isFree;
-        form.contact = adoption.value.contact;
+    try {
+        const response = await getAdoptionById(id);
+        if (response.code === "100000") {
+            adoption.value = response.data;
+            form.petName = adoption.value.petName;
+            form.petType = adoption.value.petType;
+            form.adoptionDesc = adoption.value.adoptionDesc;
+            form.area = adoption.value.area;
+            form.isFree = adoption.value.isFree;
+            form.contact = adoption.value.contact;
+        } else {
+            alert('获取领养信息失败！');
+        }
+    } catch (error) {
+        console.error('获取领养信息失败:', error);
+        alert('获取领养信息失败！');
     }
 });
 
 // 提交表单
-const submitForm = () => {
-    // 更新数据（实际应用中这里会调用API）
-    if (adoption.value) {
-        adoption.value.petName = form.petName;
-        adoption.value.petType = form.petType;
-        adoption.value.description = form.description;
-        adoption.value.region = form.region;
-        adoption.value.isFree = form.isFree;
-        adoption.value.contact = form.contact;
+const submitForm = async () => {
+    const adoptionData = {
+        id: adoption.value.id,
+        petId: adoption.value.petId,
+        petName: form.petName,
+        petType: form.petType,
+        adoptionDesc: form.adoptionDesc,
+        area: form.area,
+        isFree: form.isFree,
+        contact: form.contact,
+        petPhoto: adoption.value.petPhoto
+    };
+
+    try {
+        const response = await putAdoptionDetail(adoptionData);
+        if (response.code === "100000") {
+            alert('修改成功！');
+            router.push('/adoption');
+        } else {
+            alert('修改失败！');
+        }
+    } catch (error) {
+        console.error('修改领养信息失败:', error);
+        alert('修改领养信息失败！');
     }
-    
-    alert('修改成功！');
-    router.push('/adoption');
 };
 
 // 返回首页
@@ -275,7 +189,7 @@ const goBack = () => {
     font-size: 14px;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         background: rgba(255, 255, 255, 0.3);
         transform: scale(1.05);
@@ -297,7 +211,7 @@ const goBack = () => {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         background: #f0f7ff;
         transform: scale(1.05);
@@ -345,11 +259,17 @@ const goBack = () => {
     outline: none;
     box-sizing: border-box;
     transition: all 0.3s;
-    
+
     &:focus {
         border-color: #65A3F0;
         box-shadow: 0 0 0 3px rgba(101, 163, 240, 0.1);
     }
+}
+
+.form-input.readonly {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
 }
 
 .form-select {
@@ -362,7 +282,7 @@ const goBack = () => {
     cursor: pointer;
     box-sizing: border-box;
     transition: all 0.3s;
-    
+
     &:focus {
         border-color: #65A3F0;
         box-shadow: 0 0 0 3px rgba(101, 163, 240, 0.1);
@@ -379,7 +299,7 @@ const goBack = () => {
     resize: none;
     box-sizing: border-box;
     transition: all 0.3s;
-    
+
     &:focus {
         border-color: #65A3F0;
         box-shadow: 0 0 0 3px rgba(101, 163, 240, 0.1);
@@ -396,13 +316,13 @@ const goBack = () => {
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    
+
     input {
         width: 18px;
         height: 18px;
         cursor: pointer;
     }
-    
+
     span {
         font-size: 16px;
         color: #555;
@@ -420,7 +340,7 @@ const goBack = () => {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 20px rgba(101, 163, 240, 0.4);

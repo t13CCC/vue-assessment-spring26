@@ -10,14 +10,10 @@
             </div>
         </header>
 
-        <!-- 搜索筛选区域 -->
+        <!-- 筛选区域 -->
         <div class="search-section">
-            <div class="search-box">
-                <input type="text" v-model="searchKeyword" placeholder="搜索宠物名称..." class="search-input">
-                <button @click="search" class="search-btn">搜索</button>
-            </div>
             <div class="filter-row">
-                <select v-model="filterType" class="filter-select">
+                <select v-model="filterType" class="filter-select" @change="handleFilterChange">
                     <option value="">全部类型</option>
                     <option value="猫">猫</option>
                     <option value="狗">狗</option>
@@ -26,245 +22,153 @@
                     <option value="仓鼠">仓鼠</option>
                     <option value="其他">其他</option>
                 </select>
-                <select v-model="filterRegion" class="filter-select">
-                    <option value="">全部地区</option>
-                    <option value="北京">北京</option>
-                    <option value="上海">上海</option>
-                    <option value="广州">广州</option>
-                    <option value="深圳">深圳</option>
-                    <option value="杭州">杭州</option>
-                    <option value="成都">成都</option>
-                </select>
-                <select v-model="filterFree" class="filter-select">
-                    <option value="">全部</option>
-                    <option value="true">无偿领养</option>
-                    <option value="false">有偿领养</option>
-                </select>
+                <input type="text" v-model="filterRegion" placeholder="输入地区..." class="search-input"
+                    @change="handleFilterChange">
             </div>
         </div>
 
-        <!-- 排序方式 -->
-        <div class="sort-section">
-            <span>排序方式：</span>
-            <button :class="['sort-btn', sortBy === 'time' ? 'active' : '']" @click="sortBy = 'time'">按发布时间</button>
-            <button :class="['sort-btn', sortBy === 'name' ? 'active' : '']" @click="sortBy = 'name'">按宠物名称</button>
+        <!-- 加载状态 -->
+        <div v-if="loading" class="loading-state">
+            <div class="spinner"></div>
+            <p>加载中...</p>
+        </div>
+
+        <!-- 错误状态 -->
+        <div v-else-if="error" class="error-state">
+            <p>❌ {{ error }}</p>
+            <button @click="fetchAdoptionList" class="retry-btn">重新加载</button>
         </div>
 
         <!-- 领养列表 -->
-        <div class="adoption-list">
-            <div v-for="item in filteredList" :key="item.id" class="adoption-card">
+        <div v-else class="adoption-list">
+            <div v-for="item in adoptionList" :key="item.id" class="adoption-card">
                 <div class="card-image">
-                    <img :src="item.image || '/src/assets/hero.png'" alt="宠物图片">
+                    <img :src="item.petPhoto || '/src/assets/hero.png'" alt="宠物图片">
                 </div>
                 <div class="card-content">
                     <h3 class="pet-name">{{ item.petName }}</h3>
                     <div class="pet-info">
                         <span class="tag">{{ item.petType }}</span>
-                        <span class="tag" :class="item.isFree ? 'free' : 'paid'">{{ item.isFree ? '无偿' : '有偿' }}</span>
+                        <span class="tag" :class="item.isFree === 1 ? 'free' : 'paid'">{{ item.isFree === 1 ? '无偿' :
+                            '有偿' }}</span>
                     </div>
-                    <p class="description">{{ item.description }}</p>
+                    <p class="description">{{ item.adoptionDesc }}</p>
                     <div class="card-footer">
-                        <span class="region">📍 {{ item.region }}</span>
-                        <span class="time">🕐 {{ formatTime(item.publishTime) }}</span>
+                        <span class="region">📍 {{ item.area }}</span>
+                        <span class="time">🕐 {{ formatTime(item.createTime) }}</span>
                     </div>
                     <div class="card-actions">
-                        <button v-if="item.publisherId === currentUserId" class="action-btn edit-btn" @click="goToEdit(item.id)">编辑</button>
-                        <button v-if="item.publisherId === currentUserId" class="action-btn delete-btn" @click="deleteAdoption(item.id)">删除</button>
-                        <button v-if="item.publisherId !== currentUserId" class="action-btn contact-btn" @click="addFriend(item.publisherId)">加好友联系</button>
+                        <button v-if="item.userId === currentUserId" class="action-btn edit-btn"
+                            @click="goToEdit(item.id)">编辑</button>
+                        <button v-if="item.userId === currentUserId" class="action-btn delete-btn"
+                            @click="deleteAdoptionInfo(item.id)">删除</button>
+                        <button v-if="item.userId !== currentUserId" class="action-btn contact-btn"
+                            @click="addFriend(item.userId)">加好友联系</button>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- 空状态 -->
-        <div v-if="filteredList.length === 0" class="empty-state">
+        <div v-if="!loading && !error && adoptionList.length === 0" class="empty-state">
             <p>暂无领养信息</p>
         </div>
 
         <!-- 分页 -->
-        <div class="pagination" v-if="totalPages > 1">
-            <button :disabled="currentPage === 1" @click="currentPage--" class="page-btn">上一页</button>
+        <div class="pagination" v-if="!loading && !error && total > pageSize">
+            <button :disabled="currentPage === 1" @click="handlePageChange(currentPage - 1)"
+                class="page-btn">上一页</button>
             <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-            <button :disabled="currentPage === totalPages" @click="currentPage++" class="page-btn">下一页</button>
+            <button :disabled="currentPage >= totalPages" @click="handlePageChange(currentPage + 1)"
+                class="page-btn">下一页</button>
         </div>
     </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import { getAdoptionList, deleteAdoption } from '../api/adoption';
 
 const router = useRouter();
 
 // 当前用户ID（模拟登录用户）
 const currentUserId = ref(1);
 
-// 搜索和筛选条件
-const searchKeyword = ref('');
+// 筛选条件
 const filterType = ref('');
 const filterRegion = ref('');
-const filterFree = ref('');
-const sortBy = ref('time');
 
 // 分页
 const currentPage = ref(1);
 const pageSize = ref(6);
+const total = ref(0);
 
-// 模拟数据
-const adoptionList = ref([
-    {
-        id: 1,
-        petName: '小橘',
-        petType: '猫',
-        description: '可爱的橘猫，性格温顺，喜欢撒娇，已经打过疫苗，希望找到一个温暖的家。',
-        region: '北京',
-        isFree: true,
-        contact: '13800138001',
-        publisherId: 1,
-        publishTime: new Date('2024-01-15').getTime(),
-        image: '/src/assets/banMa/IMG_3972.PNG'
-    },
-    {
-        id: 2,
-        petName: '旺财',
-        petType: '狗',
-        description: '活泼好动的金毛犬，非常聪明，会握手、坐下等基本指令。',
-        region: '上海',
-        isFree: false,
-        contact: '13900139002',
-        publisherId: 2,
-        publishTime: new Date('2024-01-14').getTime(),
-        image: '/src/assets/banMa/IMG_3973.PNG'
-    },
-    {
-        id: 3,
-        petName: '球球',
-        petType: '仓鼠',
-        description: '可爱的金丝熊，毛色金黄，性格温顺，容易饲养。',
-        region: '广州',
-        isFree: true,
-        contact: '13700137003',
-        publisherId: 3,
-        publishTime: new Date('2024-01-13').getTime()
-    },
-    {
-        id: 4,
-        petName: '飞飞',
-        petType: '鸟',
-        description: '会说话的鹦鹉，毛色鲜艳，非常聪明可爱。',
-        region: '深圳',
-        isFree: false,
-        contact: '13600136004',
-        publisherId: 4,
-        publishTime: new Date('2024-01-12').getTime(),
-        image: '/src/assets/banMa/IMG_3974.PNG'
-    },
-    {
-        id: 5,
-        petName: '雪球',
-        petType: '兔子',
-        description: '雪白的垂耳兔，性格温顺，喜欢吃胡萝卜。',
-        region: '杭州',
-        isFree: true,
-        contact: '13500135005',
-        publisherId: 5,
-        publishTime: new Date('2024-01-11').getTime(),
-        image: '/src/assets/banMa/IMG_3975.PNG'
-    },
-    {
-        id: 6,
-        petName: '豆豆',
-        petType: '狗',
-        description: '小型泰迪犬，非常可爱，不掉毛，适合公寓饲养。',
-        region: '成都',
-        isFree: false,
-        contact: '13400134006',
-        publisherId: 1,
-        publishTime: new Date('2024-01-10').getTime(),
-        image: '/src/assets/banMa/IMG_3980.PNG'
-    },
-    {
-        id: 7,
-        petName: '咪咪',
-        petType: '猫',
-        description: '优雅的英短猫，蓝灰色毛发，性格高冷但很粘人。',
-        region: '北京',
-        isFree: true,
-        contact: '13300133007',
-        publisherId: 6,
-        publishTime: new Date('2024-01-09').getTime(),
-        image: '/src/assets/banMa/IMG_3982.PNG'
-    },
-    {
-        id: 8,
-        petName: '布丁',
-        petType: '仓鼠',
-        description: '布丁仓鼠，金黄色的毛发，非常可爱活泼。',
-        region: '上海',
-        isFree: true,
-        contact: '13200132008',
-        publisherId: 7,
-        publishTime: new Date('2024-01-08').getTime(),
-        image: '/src/assets/banMa/IMG_3983.PNG'
-    }
-]);
-
-// 筛选后的列表
-const filteredList = computed(() => {
-    let result = [...adoptionList.value];
-    
-    // 关键词搜索
-    if (searchKeyword.value) {
-        const keyword = searchKeyword.value.toLowerCase();
-        result = result.filter(item => 
-            item.petName.toLowerCase().includes(keyword) ||
-            item.description.toLowerCase().includes(keyword)
-        );
-    }
-    
-    // 类型筛选
-    if (filterType.value) {
-        result = result.filter(item => item.petType === filterType.value);
-    }
-    
-    // 地区筛选
-    if (filterRegion.value) {
-        result = result.filter(item => item.region === filterRegion.value);
-    }
-    
-    // 是否无偿筛选
-    if (filterFree.value !== '') {
-        result = result.filter(item => String(item.isFree) === filterFree.value);
-    }
-    
-    // 排序
-    if (sortBy.value === 'time') {
-        result.sort((a, b) => b.publishTime - a.publishTime);
-    } else {
-        result.sort((a, b) => a.petName.localeCompare(b.petName));
-    }
-    
-    return result;
-});
+// 数据列表
+const adoptionList = ref([]);
+const loading = ref(false);
+const error = ref('');
 
 // 总页数
-const totalPages = computed(() => Math.ceil(filteredList.value.length / pageSize.value));
-
-// 当前页列表
-const currentPageList = computed(() => {
-    const start = (currentPage.value - 1) * pageSize.value;
-    return filteredList.value.slice(start, start + pageSize.value);
-});
+const totalPages = computed(() => Math.ceil(total.value / pageSize.value));
 
 // 格式化时间
-const formatTime = (timestamp) => {
-    const date = new Date(timestamp);
+const formatTime = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
-// 搜索
-const search = () => {
+// 获取领养列表
+const fetchAdoptionList = async () => {
+    loading.value = true;
+    error.value = '';
+
+    try {
+        const params = {
+            page: currentPage.value,
+            size: pageSize.value,
+            area: filterRegion.value || undefined,
+            petType: filterType.value || undefined
+        };
+
+        const response = await getAdoptionList(params);
+
+        if (response.code === '100000') {
+            let data = response.data;
+            let records = data.records || [];
+
+            // 按发布时间降序排序
+            records.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));
+
+            adoptionList.value = records;
+            total.value = data.total || 0;
+        } else {
+            error.value = response.message || '获取领养列表失败';
+            adoptionList.value = [];
+            total.value = 0;
+        }
+    } catch (err) {
+        console.error('获取领养列表失败:', err);
+        error.value = '获取领养列表失败，请稍后重试';
+        adoptionList.value = [];
+        total.value = 0;
+    } finally {
+        loading.value = false;
+    }
+};
+
+// 处理筛选条件变化
+const handleFilterChange = () => {
     currentPage.value = 1;
+    fetchAdoptionList();
+};
+
+// 处理页码变化
+const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages.value) return;
+    currentPage.value = page;
+    fetchAdoptionList();
 };
 
 // 跳转到首页
@@ -283,19 +187,35 @@ const goToEdit = (id) => {
 };
 
 // 删除领养信息
-const deleteAdoption = (id) => {
-    if (confirm('确定要删除这条领养信息吗？')) {
-        const index = adoptionList.value.findIndex(item => item.id === id);
-        if (index !== -1) {
-            adoptionList.value.splice(index, 1);
+const deleteAdoptionInfo = async (id) => {
+    if (!confirm('确定要删除这条领养信息吗？')) return;
+
+    try {
+        const response = await deleteAdoption(id);
+        if (response.code === '100000') {
+            alert('删除成功');
+            fetchAdoptionList();
+        } else {
+            alert(response.message || '删除失败');
         }
+    } catch (err) {
+        console.error('删除失败:', err);
+        alert('删除失败，请稍后重试');
     }
 };
 
+//编辑领养信息
+
+
 // 加好友联系
-const addFriend = (publisherId) => {
-    alert(`已向用户ID ${publisherId} 发送好友请求，请等待对方通过验证后联系！`);
+const addFriend = (userId) => {
+    alert(`已向用户ID ${userId} 发送好友请求，请等待对方通过验证后联系！`);
 };
+
+// 组件挂载时获取数据
+onMounted(() => {
+    fetchAdoptionList();
+});
 </script>
 
 <style lang="scss" scoped>
@@ -329,7 +249,7 @@ const addFriend = (publisherId) => {
     font-size: 14px;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         background: rgba(255, 255, 255, 0.3);
         transform: scale(1.05);
@@ -351,7 +271,7 @@ const addFriend = (publisherId) => {
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &:hover {
         background: #f0f7ff;
         transform: scale(1.05);
@@ -379,7 +299,7 @@ const addFriend = (publisherId) => {
     border-radius: 25px;
     font-size: 16px;
     outline: none;
-    
+
     &:focus {
         border-color: #65A3F0;
     }
@@ -393,7 +313,7 @@ const addFriend = (publisherId) => {
     border-radius: 25px;
     cursor: pointer;
     font-weight: bold;
-    
+
     &:hover {
         background: #4a9ef0;
     }
@@ -412,7 +332,7 @@ const addFriend = (publisherId) => {
     font-size: 14px;
     outline: none;
     cursor: pointer;
-    
+
     &:focus {
         border-color: #65A3F0;
     }
@@ -434,15 +354,58 @@ const addFriend = (publisherId) => {
     cursor: pointer;
     font-size: 14px;
     transition: all 0.3s;
-    
+
     &:hover {
         border-color: #65A3F0;
     }
-    
+
     &.active {
         background: #65A3F0;
         color: white;
         border-color: #65A3F0;
+    }
+}
+
+.loading-state {
+    text-align: center;
+    padding: 50px;
+    color: #65A3F0;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e0e7ff;
+    border-top-color: #65A3F0;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 15px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.error-state {
+    text-align: center;
+    padding: 50px;
+    color: #dc2626;
+}
+
+.retry-btn {
+    margin-top: 15px;
+    padding: 10px 25px;
+    background: #65A3F0;
+    color: white;
+    border: none;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: bold;
+
+    &:hover {
+        background: #4a9ef0;
     }
 }
 
@@ -459,7 +422,7 @@ const addFriend = (publisherId) => {
     overflow: hidden;
     box-shadow: 0 2px 15px rgba(0, 0, 0, 0.08);
     transition: all 0.3s;
-    
+
     &:hover {
         transform: translateY(-5px);
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
@@ -469,7 +432,7 @@ const addFriend = (publisherId) => {
 .card-image {
     height: 200px;
     overflow: hidden;
-    
+
     img {
         width: 100%;
         height: 100%;
@@ -500,12 +463,12 @@ const addFriend = (publisherId) => {
     color: #0284c7;
     border-radius: 15px;
     font-size: 12px;
-    
+
     &.free {
         background: #dcfce7;
         color: #16a34a;
     }
-    
+
     &.paid {
         background: #fef3c7;
         color: #d97706;
@@ -543,22 +506,22 @@ const addFriend = (publisherId) => {
     font-size: 14px;
     cursor: pointer;
     transition: all 0.3s;
-    
+
     &.edit-btn {
         background: #e0e7ff;
         color: #4338ca;
     }
-    
+
     &.delete-btn {
         background: #fee2e2;
         color: #dc2626;
     }
-    
+
     &.contact-btn {
         background: #dbeafe;
         color: #1d4ed8;
     }
-    
+
     &:hover {
         opacity: 0.8;
         transform: scale(1.02);
@@ -587,12 +550,12 @@ const addFriend = (publisherId) => {
     color: #65A3F0;
     cursor: pointer;
     font-weight: bold;
-    
+
     &:disabled {
         opacity: 0.5;
         cursor: not-allowed;
     }
-    
+
     &:hover:not(:disabled) {
         background: #65A3F0;
         color: white;
