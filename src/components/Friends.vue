@@ -5,9 +5,9 @@
                 <button class="home-btn" @click="goToHome">🏠 返回首页</button>
                 <div class="logo"> 好友中心</div>
             </div>
-            <!-- <div class="header-right">
+            <div class="header-right">
                 <button class="add-btn" @click="showFindModal = true">+ 发现好友</button>
-            </div> -->
+            </div>
         </header>
 
         <!-- 选项卡 -->
@@ -90,7 +90,7 @@
             </div>
         </div>
  
-        <!-- 发现好友弹窗（后端未提供接口，暂注释）
+        <!-- 发现好友弹窗 -->
         <div v-if="showFindModal" class="modal-overlay" @click.self="showFindModal = false">
             <div class="find-modal-content">
                 <div class="find-modal-header">
@@ -102,55 +102,31 @@
                     <button @click="searchUsers" class="find-search-btn">搜索</button>
                 </div>
                 <div class="find-users-list">
-                    <div v-for="user in filteredUsers" :key="user.id" class="find-user-item">
-                        <img :src="user.avatar || '/src/assets/avator.png'" alt="头像" class="find-avatar">
+                    <div v-if="!findKeyword" class="find-empty">
+                        <p>请输入用户ID搜索好友</p>
+                    </div>
+                    <div v-else class="find-user-item">
                         <div class="find-user-info">
-                            <span class="find-user-name">{{ user.name }}</span>
-                            <span class="find-user-status">{{ isFriend(user.id) ? '已成为好友' : '未添加' }}</span>
+                            <span class="find-user-name">用户 ID: {{ findKeyword }}</span>
+                            <span class="find-user-status">{{ isFriend(findKeyword) ? '已成为好友' : '未添加' }}</span>
                         </div>
                         <button 
-                            v-if="!isFriend(user.id) && !hasPendingRequest(user.id)" 
+                            v-if="!isFriend(findKeyword) && !hasPendingRequest(findKeyword)" 
                             class="find-add-btn" 
-                            @click="handleFindAdd(user.id)"
+                            @click="handleFindAdd(findKeyword)"
                         >
                             + 添加
                         </button>
-                        <button v-else-if="hasPendingRequest(user.id)" class="find-pending-btn">
+                        <button v-else-if="hasPendingRequest(findKeyword)" class="find-pending-btn">
                             等待验证
                         </button>
                         <button v-else class="find-already-btn">
                             已添加
                         </button>
                     </div>
-                    <div v-if="filteredUsers.length === 0 && findKeyword" class="find-empty">
-                        <p>未找到用户</p>
-                    </div>
-                    <div v-if="!findKeyword" class="find-recommend">
-                        <p>推荐用户</p>
-                        <div v-for="user in recommendUsers" :key="user.id" class="find-user-item">
-                            <img :src="user.avatar || '/src/assets/avator.png'" alt="头像" class="find-avatar">
-                            <div class="find-user-info">
-                                <span class="find-user-name">{{ user.name }}</span>
-                                <span class="find-user-status">推荐</span>
-                            </div>
-                            <button 
-                                v-if="!isFriend(user.id) && !hasPendingRequest(user.id)" 
-                                class="find-add-btn" 
-                                @click="handleFindAdd(user.id)"
-                            >
-                                + 添加
-                            </button>
-                            <button v-else-if="hasPendingRequest(user.id)" class="find-pending-btn">
-                                等待验证
-                            </button>
-                            <button v-else class="find-already-btn">
-                                已添加
-                            </button>
-                        </div>
-                    </div>
                 </div>
             </div>
-        </div> -->
+        </div>
     </div>
 </template>
 
@@ -197,9 +173,9 @@ const currentFriendForGroup = ref(null);
 const showCreateGroupModal = ref(false);
 const newGroupName = ref('');
 
-// 发现好友弹窗（后端未提供接口，暂注释）
-// const showFindModal = ref(false);
-// const findKeyword = ref('');
+// 发现好友弹窗
+const showFindModal = ref(false);
+const findKeyword = ref('');
 
 // 好友分组
 const friendGroups = ref([]);
@@ -213,8 +189,7 @@ const receivedRequests = ref([]);
 // 发出的好友申请
 const sentRequests = ref([]);
 
-// 可添加的用户（后端未提供接口，暂注释）
-// const allUsers = ref([]);
+
 
 // 通知列表
 const notifications = ref([]);
@@ -539,68 +514,46 @@ const deleteFriend = async (friendId) => {
     }
 };
 
-// 搜索用户（后端未提供接口，暂注释）
-// const filteredUsers = computed(() => {
-//     if (!findKeyword.value) return [];
-//     const keyword = findKeyword.value.toLowerCase();
-//     return allUsers.value.filter(user => 
-//         user.id !== currentUserId.value && 
-//         user.name.toLowerCase().includes(keyword)
-//     );
-// });
-// 
-// // 推荐用户
-// const recommendUsers = computed(() => {
-//     return allUsers.value.filter(user => 
-//         user.id !== currentUserId.value && 
-//         !friends.value.some(f => f.friendId === user.id.toString())
-//     ).slice(0, 5);
-// });
-// 
-// // 是否是好友
-// const isFriend = (userId) => {
-//     return friends.value.some(friend => friend.friendId === userId.toString());
-// };
-// 
-// // 是否有待处理的请求
-// const hasPendingRequest = (userId) => {
-//     return sentRequests.value.some(req => req.targetId === userId);
-// };
-// 
-// // 搜索用户
-// const searchUsers = () => {
-//     // 搜索逻辑已通过computed实现
-// };
-// 
-// // 处理发现好友中的添加
-// const handleFindAdd = async (userId) => {
-//     try {
-//         const res = await applyFriendRequest('想加你为好友', userId);
-//         if (res.code === '100000') {
-//             alert('好友请求已发送！');
-//             await loadData();
-//         }
-//         else if (res.code === '10001') {
-//             alert(res.message || '参数错误');
-//         }
-//         else if (res.code === '50001') {
-//             alert(res.message || '目标用户不存在');
-//         }
-//         else if (res.code === '50002') {
-//             alert(res.message || '不能添加自己为好友');
-//         }
-//         else if (res.code === '50003') {
-//             alert(res.message || '你们已经是好友了');
-//         }
-//         else if (res.code === '50004') {
-//             alert(res.message || '已发送过申请，请勿重复发送');
-//         }
-// 
-//     } catch (error) {
-//         console.error('发送好友请求失败:', error);
-//         alert('发送失败');
-//     }
-// };
+// 是否是好友
+const isFriend = (userId) => {
+    return friends.value.some(friend => friend.friendId === userId.toString());
+};
+
+// 是否有待处理的请求
+const hasPendingRequest = (userId) => {
+    return sentRequests.value.some(req => req.targetId.toString() === userId.toString());
+};
+
+// 处理发现好友中的添加
+const handleFindAdd = async (userId) => {
+    try {
+        const res = await applyFriendRequest('想加你为好友', userId);
+        if (res.code === '100000') {
+            alert('好友请求已发送！');
+            await loadData();
+            findKeyword.value = '';
+        }
+        else if (res.code === '10001') {
+            alert(res.message || '参数错误');
+        }
+        else if (res.code === '50001') {
+            alert(res.message || '目标用户不存在');
+        }
+        else if (res.code === '50002') {
+            alert(res.message || '不能添加自己为好友');
+        }
+        else if (res.code === '50003') {
+            alert(res.message || '你们已经是好友了');
+        }
+        else if (res.code === '50004') {
+            alert(res.message || '已发送过申请，请勿重复发送');
+        }
+
+    } catch (error) {
+        console.error('发送好友请求失败:', error);
+        alert('发送失败');
+    }
+};
 </script>
 
 <style lang="scss" scoped>
@@ -769,7 +722,7 @@ const deleteFriend = async (friendId) => {
     }
 }
 
-/* 发现好友弹窗样式（后端未提供接口，暂注释）
+/* 发现好友弹窗样式 */
 .find-modal-content {
     background: white;
     border-radius: 20px;
@@ -919,13 +872,5 @@ const deleteFriend = async (friendId) => {
     color: #999;
 }
 
-.find-recommend {
-    p {
-        font-size: 13px;
-        color: #999;
-        margin: 10px 0;
-        padding-left: 12px;
-    }
-}
-*/
+
 </style>
