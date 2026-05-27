@@ -124,7 +124,7 @@ watchEffect(() => {
 const emailLogin = async () => {
     try {
         const res = await loginByEmail(signinBack.username, signinBack.password);
-        if (res.code === "100000" || true) {
+        if (res.code === "100000" ) {
             alert("登录成功！");
             emit('login-success', res.data);
 
@@ -185,13 +185,14 @@ function toggleVerifyMode() {
 const phoneLogin = async () => {
     try {
         const res = await loginByPhone(signinBack.username, signinBack.password);
-        if (res.code === "200") {
+        if (res.code === "100000") {
             alert("登录成功！");
             emit('login-success', res.data);
 
             if (res.data.token) {
                 localStorage.setItem('token', res.data.token);
             }//存token
+            push('/');
 
         } else {
             alert(res.message || "登录失败，请检查手机号或密码是否正确");
@@ -206,7 +207,7 @@ const phoneLogin = async () => {
 async function emailVerifyLogin() {
     try {
         const res = await loginByEmailCode(signinBack.username, signinBack.password);
-        if (res.code === "200") {
+        if (res.code === "100000") {
             alert("登录成功！");
             emit('login-success', res.data);
 

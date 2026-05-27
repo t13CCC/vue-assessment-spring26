@@ -52,6 +52,7 @@ import { useRouter } from 'vue-router';
 import EditProfile from './EditProfile.vue';
 import BirthdayWish from './BirthdayWish.vue';
 import Signin from './signin.vue';
+import {getUserInfo} from '@/api/user';
 
 const router = useRouter();
 const showEditProfile = ref(false);
@@ -67,7 +68,7 @@ let user = reactive({
 async function showInfo() {
     try {
         const response = await getUserInfo();
-        user.name = response.data.name;
+        user.name = response.data.nickname;
         user.avator = response.data.avatar;
     } catch (error) {
         alert('获取用户信息失败，请稍后重试');

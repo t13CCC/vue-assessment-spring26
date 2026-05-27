@@ -66,7 +66,6 @@
             <div class="modal-content">
                 <h3>选择分组</h3>
                 <select v-model="selectedFriendGroup" class="modal-select">
-                    <option value="">未分组</option>
                     <option v-for="group in friendGroups" :key="group.id" :value="group.id">
                         {{ group.groupName }}
                     </option>

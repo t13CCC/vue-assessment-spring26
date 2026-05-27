@@ -81,7 +81,7 @@ const emit = defineEmits(['chat', 'delete', 'change-group', 'create-group', 'upd
 
 // 获取未分组好友
 const getUngroupedFriends = computed(() => {
-    return props.friends.filter(friend => !friend.groupId);
+    return props.friends
 });
 
 // 获取分组中的好友
