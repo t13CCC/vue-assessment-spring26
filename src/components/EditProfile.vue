@@ -2,7 +2,7 @@
 import { ref, defineEmits, reactive, onMounted } from 'vue'
 import { getUserInfo, updateUserInfo } from '@/api/user'
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'update'])
 
 const fileInput = ref(null)
 
@@ -30,6 +30,7 @@ const handleSave = async () => {
         switch (res.code) {
             case "100000":
                 alert('修改成功')
+                emit('update')
                 emit('close')
                 break
             case "100002":
@@ -246,7 +247,7 @@ label {
     font-size: 18px;
 }
 
-input{
+input {
     width: 320px;
     padding: 10px;
     border: 1px solid #e0e0e0;

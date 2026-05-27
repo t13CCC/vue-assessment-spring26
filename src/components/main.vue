@@ -9,7 +9,7 @@
                 </div>
                 <span class="edit-icon">✏️</span>
             </div>
-            <EditProfile v-show="showEditProfile" @close="showEditProfile = false" />
+            <EditProfile v-show="showEditProfile" @close="showEditProfile = false" @update="showInfo" />
         </div>
         <div class="section2">
             <h1>萌宠小镇</h1>
@@ -65,6 +65,18 @@ let user = reactive({
     name: "未设置用户名",
     avator: "/src/assets/avator.png"
 });
+
+async function showInfo() {
+    const response = await getUserInfo();
+    user.name = response.data.name;
+    user.avator = response.data.avatar;
+}
+
+onMounted(() => {
+    showInfo();
+});
+
+
 
 // 宠物数据（从localStorage获取或使用默认数据）
 const pets = ref([]);
