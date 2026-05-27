@@ -46,9 +46,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { getChatHistory, sendPrivateMessage, markChatAsRead, getFriends } from '@/api/friends';
+import { getChatHistory, markChatAsRead, getFriends, sendPrivateMessage } from '@/api/friends';
+import { initSocket, onMessage, offMessage } from '@/utils/socket';
 
 const router = useRouter();
 const route = useRoute();
@@ -56,6 +57,23 @@ const route = useRoute();
 // 当前用户
 const currentUserId = ref(1);
 const currentUserAvatar = ref('/src/assets/avator.png');
+
+// WebSocket 消息处理函数 - CHAT 类型（后端定义的消息类型）
+const handleChatMessage = (data) => {
+  const { senderId, content } = data;
+  const friendId = parseInt(route.params.friendId);
+  
+  // 如果是当前聊天对象发来的消息
+  if (senderId === friendId) {
+    messages.value.push({
+      id: Date.now(),
+      content,
+      isMine: false,
+      time: Date.now()
+    });
+    scrollToBottom();
+  }
+};
 
 // 好友信息
 const friend = ref(null);
@@ -125,7 +143,7 @@ const formatTime = (timestamp) => {
     return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
 
-// 发送消息
+// 发送消息（使用 HTTP，后端会通过 WebSocket 推送给对方）
 const sendMessage = async () => {
     if (!inputMessage.value.trim() || sending.value) return;
     
@@ -135,9 +153,9 @@ const sendMessage = async () => {
     sending.value = true;
     
     try {
+        // 使用 HTTP API 发送消息（后端会持久化并通过 WebSocket 推送给对方）
         const res = await sendPrivateMessage(friendId, content);
         if (res.code === '100000') {
-            // 添加发送成功的消息
             messages.value.push({
                 id: res.data?.id || Date.now(),
                 content: res.data?.content || content,
@@ -207,9 +225,21 @@ watch(() => route.params.friendId, async () => {
 
 // 初始化
 onMounted(async () => {
+    // 初始化 WebSocket 连接
+    initSocket();
+    
+    // 注册 CHAT 消息处理器（后端定义的消息类型）
+    onMessage('CHAT', handleChatMessage);
+    
     await getFriendInfo();
     await loadChatHistory();
     await markAsRead();
+});
+
+// 组件卸载时清理
+onUnmounted(() => {
+    // 取消消息监听
+    offMessage('CHAT', handleChatMessage);
 });
 </script>
 
