@@ -17,7 +17,7 @@
             <div 
                 v-for="notification in notifications" 
                 :key="notification.id" 
-                :class="['notification-card', notification.read ? 'read' : 'unread']"
+                :class="['notification-card', notification.isRead === 1 ? 'read' : 'unread']"
                 @click="handleNotificationClick(notification)"
             >
                 <!-- 通知图标 -->
@@ -32,11 +32,11 @@
                 <div class="notification-content">
                     <h4 class="notification-title">{{ notification.title }}</h4>
                     <p class="notification-message">{{ notification.content }}</p>
-                    <span class="notification-time">{{ formatTime(notification.createdAt) }}</span>
+                    <span class="notification-time">{{ formatTime(notification.createdTime) }}</span>
                 </div>
 
                 <!-- 已读标记 -->
-                <div v-if="!notification.read" class="unread-dot"></div>
+                <div v-if="notification.isRead === 0" class="unread-dot"></div>
             </div>
         </div>
     </div>
@@ -66,7 +66,7 @@ const formatTime = (timestamp) => {
 
 // 点击通知
 const handleNotificationClick = (notification) => {
-    if (!notification.read) {
+    if (notification.isRead === 0) {
         emit('mark-as-read', notification.id);
     }
 };

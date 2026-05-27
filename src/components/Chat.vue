@@ -3,9 +3,9 @@
         <header class="header">
             <div class="header-left">
                 <button class="back-btn" @click="goBack">← 返回好友列表</button>
-                <img :src="friend?.avatar || '/src/assets/avator.png'" alt="头像" class="friend-avatar">
+                <img :src="friend?.friendAvatar || '/src/assets/avator.png'" alt="头像" class="friend-avatar">
                 <div class="friend-info">
-                    <h3 class="friend-name">{{ friend?.remark || friend?.nickname }}</h3>
+                    <h3 class="friend-name">{{ friend?.friendName }}</h3>
                     <span class="friend-status">在线</span>
                 </div>
             </div>
@@ -18,14 +18,14 @@
                 <p>加载消息中...</p>
             </div>
             <div v-else v-for="msg in messages" :key="msg.id" :class="['message', msg.isMine ? 'mine' : 'friend']">
-                <img :src="msg.isMine ? currentUserAvatar : friend?.avatar || '/src/assets/avator.png'" alt="头像" class="msg-avatar">
+                <img :src="msg.isMine ? currentUserAvatar : friend?.friendAvatar || '/src/assets/avator.png'" alt="头像" class="msg-avatar">
                 <div class="msg-content">
                     <p class="msg-text">{{ msg.content }}</p>
                     <span class="msg-time">{{ formatTime(msg.time) }}</span>
                 </div>
             </div>
             <div v-if="!loading && messages.length === 0" class="empty-messages">
-                <p>开始与 {{ friend?.remark || friend?.nickname }} 的聊天吧！</p>
+                <p>开始与 {{ friend?.friendName }} 的聊天吧！</p>
             </div>
         </div>
 
@@ -46,9 +46,10 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue';
+import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { getChatHistory, sendPrivateMessage, markChatAsRead, getFriends } from '@/api/friends';
+import { getChatHistory, markChatAsRead, getFriends, sendPrivateMessage } from '@/api/friends';
+import { initSocket, onMessage, offMessage } from '@/utils/socket';
 
 const router = useRouter();
 const route = useRoute();
@@ -56,6 +57,23 @@ const route = useRoute();
 // 当前用户
 const currentUserId = ref(1);
 const currentUserAvatar = ref('/src/assets/avator.png');
+
+// WebSocket 消息处理函数 - CHAT 类型（后端定义的消息类型）
+const handleChatMessage = (data) => {
+  const { senderId, content } = data;
+  const friendId = parseInt(route.params.friendId);
+  
+  // 如果是当前聊天对象发来的消息
+  if (senderId === friendId) {
+    messages.value.push({
+      id: Date.now(),
+      content,
+      isMine: false,
+      time: Date.now()
+    });
+    scrollToBottom();
+  }
+};
 
 // 好友信息
 const friend = ref(null);
@@ -92,14 +110,23 @@ const loadChatHistory = async () => {
         loading.value = true;
         const friendId = parseInt(route.params.friendId);
         const res = await getChatHistory(friendId);
-        if (res.code === '100000' && res.data) {
+        if (res.code === '100000' && res.data?.messages) {
             // 转换消息格式
-            messages.value = res.data.map(msg => ({
+            messages.value = res.data.messages.map(msg => ({
                 id: msg.id,
                 content: msg.content,
                 isMine: msg.senderId === currentUserId.value,
-                time: msg.timestamp
+                time: msg.createdTime
             }));
+        }
+        else if (res.code === '10001') {
+            alert(res.message || '参数错误');
+        }
+        else if (res.code === '50001') {
+            alert(res.message || '目标用户不存在');
+        }
+        else if (res.code === '50008') {
+            alert(res.message || '你们不是好友');
         }
     } catch (error) {
         console.error('加载聊天记录失败:', error);
@@ -116,7 +143,7 @@ const formatTime = (timestamp) => {
     return `${date.getHours()}:${String(date.getMinutes()).padStart(2, '0')}`;
 };
 
-// 发送消息
+// 发送消息（使用 HTTP，后端会通过 WebSocket 推送给对方）
 const sendMessage = async () => {
     if (!inputMessage.value.trim() || sending.value) return;
     
@@ -126,19 +153,27 @@ const sendMessage = async () => {
     sending.value = true;
     
     try {
+        // 使用 HTTP API 发送消息（后端会持久化并通过 WebSocket 推送给对方）
         const res = await sendPrivateMessage(friendId, content);
         if (res.code === '100000') {
-            // 添加发送成功的消息
             messages.value.push({
                 id: res.data?.id || Date.now(),
-                content: content,
+                content: res.data?.content || content,
                 isMine: true,
-                time: Date.now()
+                time: res.data?.createdTime || Date.now()
             });
             inputMessage.value = '';
             scrollToBottom();
+        } else if (res.code === '10001') {
+            alert(res.message || '参数错误');
+        } else if (res.code === '20003') {
+            alert(res.message || '账号或密码错误');
+        } else if (res.code === '50001') {
+            alert(res.message || '目标用户不存在');
+        } else if (res.code === '50008') {
+            alert(res.message || '你们不是好友');
         } else {
-            alert('发送失败，请重试');
+            alert(res.message || '发送失败，请重试');
         }
     } catch (error) {
         console.error('发送消息失败:', error);
@@ -166,7 +201,16 @@ const goBack = () => {
 const markAsRead = async () => {
     try {
         const friendId = parseInt(route.params.friendId);
-        await markChatAsRead(friendId);
+        const res = await markChatAsRead(friendId);
+        if (res.code === '100000') {
+            alert('标记成功');
+        }   
+        else if (res.code === '50001') {
+            alert(res.message || '目标用户不存在');
+        }
+        else if (res.code === '50008') {
+            alert(res.message || '你们不是好友');
+        }
     } catch (error) {
         console.error('标记已读失败:', error);
     }
@@ -181,9 +225,21 @@ watch(() => route.params.friendId, async () => {
 
 // 初始化
 onMounted(async () => {
+    // 初始化 WebSocket 连接
+    initSocket();
+    
+    // 注册 CHAT 消息处理器（后端定义的消息类型）
+    onMessage('CHAT', handleChatMessage);
+    
     await getFriendInfo();
     await loadChatHistory();
     await markAsRead();
+});
+
+// 组件卸载时清理
+onUnmounted(() => {
+    // 取消消息监听
+    offMessage('CHAT', handleChatMessage);
 });
 </script>
 

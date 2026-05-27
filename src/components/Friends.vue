@@ -57,8 +57,8 @@
         <AdoptionNotifications 
             v-if="activeTab === 'notifications'"
             :notifications="notifications"
-            @mark-as-read="markNotificationAsRead"
-            @mark-all-read="markAllNotificationsAsRead"
+            @mark-as-read="handleMarkNotificationAsRead"
+            @mark-all-read="handleMarkAllRead"
         />
 
         <!-- 分组选择弹窗 -->
@@ -172,6 +172,7 @@ import {
   getPrivateChatContacts,
   getNotifications,
   markAllNotificationsAsRead,
+  getUnreadNotificationCount,
   markNotificationAsRead
 } from '@/api/friends';
 import FriendsList from './FriendsList.vue';
@@ -275,20 +276,11 @@ const loadData = async () => {
         
         // 加载通知
         await loadNotifications();
+        
+        // 加载未读通知数量
+        await loadUnreadNotificationCount();
     } catch (error) {
         console.error('加载数据失败:', error);
-    }
-};
-
-// 加载最近联系人
-const loadRecentContacts = async () => {
-    try {
-        const res = await getPrivateChatContacts();
-        if (res.code === '100000' && res.data) {
-            recentContacts.value = res.data;
-        }
-    } catch (error) {
-        console.error('加载最近联系人失败:', error);
     }
 };
 
@@ -298,10 +290,43 @@ const loadNotifications = async () => {
         const res = await getNotifications();
         if (res.code === '100000' && res.data) {
             notifications.value = res.data;
-            unreadNotificationCount.value = res.data.filter(n => !n.read).length;
+        }
+        else if (res.code === '10002') {
+            console.error('用户未登录或登录已过期', res.message);
         }
     } catch (error) {
         console.error('加载通知失败:', error);
+    }
+};
+
+
+// 加载最近联系人
+const loadRecentContacts = async () => {
+    try {
+        const res = await getPrivateChatContacts();
+        if (res.code === '100000' && res.data) {
+            recentContacts.value = res.data;
+        }
+        else if (res.code === '10002') {
+            console.error('用户未登录或登录已过期', res.message);
+        }
+    } catch (error) {
+        console.error('加载最近联系人失败:', error);
+    }
+};
+
+// 加载未读通知数量
+const loadUnreadNotificationCount = async () => {
+    try {
+        const res = await getUnreadNotificationCount();
+        if (res.code === '100000' && res.data !== undefined) {
+            unreadNotificationCount.value = res.data;
+        }
+        else if (res.code === '10002') {
+            console.error('用户未登录或登录已过期', res.message);
+        }
+    } catch (error) {
+        console.error('获取未读通知数量失败:', error);
     }
 };
 
@@ -446,6 +471,46 @@ const createGroup = async () => {
     } catch (error) {
         console.error('创建分组失败:', error);
         alert('创建失败');
+    }
+};
+
+// 标记所有通知为已读
+const handleMarkAllRead = async () => {
+    try {
+        const res = await markAllNotificationsAsRead();
+        if (res.code === '100000') {
+            // 更新本地通知状态
+            notifications.value.forEach(notification => {
+                notification.isRead = 1;
+            });
+            unreadNotificationCount.value = 0;
+        } else if (res.code === '10002') {
+            console.error('用户未登录或登录已过期', res.message);
+        }
+    } catch (error) {
+        console.error('标记全部已读失败:', error);
+    }
+};
+
+// 标记单条通知为已读
+const handleMarkNotificationAsRead = async (notificationId) => {
+    try {
+        const res = await markNotificationAsRead(notificationId);
+            if (res.code === '100000') {
+            // 更新本地通知状态
+            const notification = notifications.value.find(n => n.id === notificationId);
+            if (notification) {
+                notification.isRead = 1;
+                // 更新未读数量
+                if (unreadNotificationCount.value > 0) {
+                    unreadNotificationCount.value--;
+                }
+            }
+        } else if (res.code === '10002') {
+            console.error('用户未登录或登录已过期', res.message);
+        }
+    } catch (error) {
+        console.error('标记通知为已读失败:', error);
     }
 };
 

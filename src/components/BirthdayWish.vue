@@ -23,7 +23,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, onUnmounted } from 'vue';
+import { initSocket, onMessage, offMessage } from '@/utils/socket';
 
 const props = defineProps({
   pets: {
@@ -95,15 +96,43 @@ function closeWish() {
   showBirthdayWish.value = false;
 }
 
+// 处理 WebSocket 收到的生日消息
+const handleBirthdayMessage = (data) => {
+  const { content, extra } = data;
+  
+  // 设置生日宠物信息
+  if (extra) {
+    birthdayPet.value = {
+      id: extra.petId,
+      name: extra.petName,
+      breed: extra.petBreed,
+      birthday: extra.birthday
+    };
+  }
+  
+  // 显示生日祝福
+  showBirthdayWish.value = true;
+  
+  // 记录已显示（避免重复显示）
+  const today = new Date();
+  localStorage.setItem('birthdayWishShown', today.toDateString());
+};
+
 // 监听宠物列表变化
 watch(() => props.pets, () => {
   checkBirthdays();
 }, { deep: true });
 
 onMounted(() => {
+  // 初始化 WebSocket 连接
+  initSocket();
+  
+  // 注册 BIRTHDAY 消息处理器
+  onMessage('BIRTHDAY', handleBirthdayMessage);
+  
   checkBirthdays();
   
-  // 设置定时器，每天早上8点检查
+  // 设置定时器，每天早上8点检查（备用方案）
   const now = new Date();
   const next8am = new Date(now);
   next8am.setHours(8, 0, 0, 0);
@@ -117,6 +146,11 @@ onMounted(() => {
     // 之后每天检查
     setInterval(checkBirthdays, 24 * 60 * 60 * 1000);
   }, delay);
+});
+
+onUnmounted(() => {
+  // 取消消息监听
+  offMessage('BIRTHDAY', handleBirthdayMessage);
 });
 </script>
 

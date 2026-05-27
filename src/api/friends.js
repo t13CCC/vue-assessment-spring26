@@ -121,7 +121,6 @@ export function getChatHistory(friendId, cursor = 0, size = 20) {
   });
 }
 
-// 标记已读
 export function markChatAsRead(friendId) {
   return request({
     url: `/api/friend/chat/read/${friendId}`,
