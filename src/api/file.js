@@ -57,7 +57,7 @@ export function getPetTag(tagId) {
 //分页查询宠物标签
 export function getPetTags(params) {
   return request({
-    url: "/api/petTag/page",
+    url: "/api/petTag/list",
     method: "POST",
     data: {
       pageNum: params.pageNum || 1,

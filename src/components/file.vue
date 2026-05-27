@@ -335,12 +335,13 @@ async function savePet() {
                 alert(response.message || '修改失败')
             }
         } else {
-            // 新建模式：调用创建 API
-            const response = await createPet(formData)
+            // 新建模式：调用创建 API（不包含 tags）
+            const { tags, ...petData } = formData
+            const response = await createPet(petData)
             if (response.code === "100000") {
                 const newPetId = response.data.id
                 pets.value.push({ ...formData, id: newPetId })
-                // 创建标签
+                // 创建标签（单独调用标签接口）
                 await createPetTags(newPetId, formData.tags)
                 alert('创建成功')
             } else {
