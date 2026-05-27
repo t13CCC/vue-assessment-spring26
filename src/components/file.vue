@@ -23,7 +23,7 @@
                         <span class="tag">{{ pet.petBreed }}</span>
                     </div>
                     <div class="pet-details">
-                        <p><strong>性别：</strong>{{ pet.petGender }}</p>
+                        <p><strong>性别：</strong>{{ getGenderLabel(pet.petGender) }}</p>
                         <p><strong>体重：</strong>{{ pet.petWeight }} kg</p>
                         <p><strong>毛色：</strong>{{ pet.petColor }}</p>
                         <p><strong>生日：</strong>{{ pet.petBirthday }}</p>
@@ -87,8 +87,8 @@
                                 <div class="form-group half-width">
                                     <label>性别</label>
                                     <select v-model="formData.petGender" required>
-                                        <option value="">请选择</option>
-                                        <option v-for="opt in genderOptions" :key="opt" :value="opt">{{ opt }}</option>
+                                        <option v-for="opt in genderOptions" :key="opt.value" :value="opt.value">{{
+                                            opt.label }}</option>
                                     </select>
                                 </div>
                                 <div class="form-group half-width">
@@ -177,7 +177,16 @@ function handleDrop(event) {
 }
 
 const petTypeOptions = ['猫', '狗', '其他']
-const genderOptions = ['公', '母']
+const genderOptions = [
+    { value: 0, label: '未知' },
+    { value: 1, label: '公' },
+    { value: 2, label: '母' }
+]
+
+function getGenderLabel(value) {
+    const option = genderOptions.find(opt => opt.value === value)
+    return option ? option.label : '未知'
+}
 
 const pets = ref([])
 
@@ -230,8 +239,8 @@ const formData = reactive({
     petType: '',
     petPhoto: '',
     petBreed: '',
-    petGender: '',
-    petWeight: null,
+    petGender: 0,
+    petWeight: 0,
     petColor: '',
     petBirthday: '',
     tags: []
@@ -248,8 +257,8 @@ function createEmptyForm() {
         petType: '',
         petPhoto: '',
         petBreed: '',
-        petGender: '',
-        petWeight: null,
+        petGender: 0,
+        petWeight: 0,
         petColor: '',
         petBirthday: '',
         tags: []
