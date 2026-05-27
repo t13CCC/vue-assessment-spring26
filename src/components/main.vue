@@ -65,9 +65,13 @@ let user = reactive({
 });
 
 async function showInfo() {
-    const response = await getUserInfo();
-    user.name = response.data.name;
-    user.avator = response.data.avatar;
+    try {
+        const response = await getUserInfo();
+        user.name = response.data.name;
+        user.avator = response.data.avatar;
+    } catch (error) {
+        alert('获取用户信息失败，请稍后重试');
+    }
 }
 
 onMounted(() => {
