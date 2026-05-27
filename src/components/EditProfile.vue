@@ -60,7 +60,7 @@ const userInfo = reactive({
     email: '',
     phone: '',
     avatar: 'https://neeko-copilot.bytedance.net/api/text_to_image?prompt=default%20user%20avatar%20portrait%20icon%20minimalist%20style&image_size=square',
-    bio: ''
+    userId: ''
 })
 // 组件挂载时获取用户信息
 onMounted(async () => {
@@ -71,6 +71,7 @@ onMounted(async () => {
             userInfo.gender = res.data.gender ?? 0
             userInfo.email = res.data.email || ''
             userInfo.phone = res.data.phone || ''
+            userInfo.userId = res.data.userId || ''
             if (res.data.avatar) {
                 userInfo.avatar = res.data.avatar
             }
@@ -137,7 +138,9 @@ onMounted(async () => {
                     </div>
                 </div>
             </div>
-
+            <div class="userIdCss">
+                用户ID:{{userInfo.userId}}
+            </div>
 
             <div class="form-item">
                 <label>手机号:</label>
@@ -337,5 +340,9 @@ input[type="radio"]:checked::after {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
+}
+.userIdCss {
+    font-size: 13px;
+    color: #5c5c5c;
 }
 </style>
