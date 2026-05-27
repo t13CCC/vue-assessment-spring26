@@ -57,8 +57,6 @@ const router = useRouter();
 const showEditProfile = ref(false);
 // 从 localStorage 读取登录状态，默认显示登录弹窗
 const isLoggedInValue = localStorage.getItem('isLoggedIn');
-console.log('isLoggedIn value:', isLoggedInValue);
-console.log('showSignin should be:', !isLoggedInValue);
 const showSignin = ref(!isLoggedInValue);
 
 let user = reactive({
@@ -78,7 +76,7 @@ onMounted(() => {
 
 
 
-// 宠物数据（从localStorage获取或使用默认数据）
+// 宠物数据（从localStorage获取）
 const pets = ref([]);
 
 // 从localStorage加载宠物数据
@@ -86,39 +84,6 @@ function loadPets() {
     const storedPets = localStorage.getItem('pets');
     if (storedPets) {
         pets.value = JSON.parse(storedPets);
-    } else {
-        // 默认宠物数据（包含生日在今天的宠物用于测试）
-        const today = new Date();
-        const thisYear = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-
-        pets.value = [
-            {
-                id: 1,
-                name: 'Tommy',
-                type: '猫',
-                photo: '',
-                breed: '英短',
-                gender: '公',
-                weight: 4.5,
-                color: '蓝白',
-                birthday: `${thisYear - 5}-${month}-${day}`, // 今天5岁生日
-                tags: ['可爱', '粘人', '调皮']
-            },
-            {
-                id: 2,
-                name: 'Lucky',
-                type: '狗',
-                photo: '',
-                breed: '金毛',
-                gender: '母',
-                weight: 25,
-                color: '金黄色',
-                birthday: `${thisYear - 3}-${month}-${day}`, // 今天3岁生日
-                tags: ['温顺', '聪明', '忠诚']
-            }
-        ];
     }
 }
 
