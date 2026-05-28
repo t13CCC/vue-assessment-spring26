@@ -192,7 +192,8 @@ const phoneLogin = async () => {
             if (res.data.token) {
                 localStorage.setItem('token', res.data.token);
             }//存token
-            push('/');
+            router.push('/');
+
 
         } else {
             alert(res.message || "登录失败，请检查手机号或密码是否正确");
@@ -214,6 +215,8 @@ async function emailVerifyLogin() {
             if (res.data.token) {
                 localStorage.setItem('token', res.data.token);
             }
+            router.push('/');
+
         } else {
             alert(res.message || "验证码错误或已过期");
         }

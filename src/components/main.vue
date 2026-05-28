@@ -70,7 +70,7 @@ async function showInfo() {
     if (!userId) return;
     try {
         const response = await getUserInfo(userId);
-        user.name = response.data.name;
+        user.name = response.data.nickname;
         user.avator = response.data.avatar;
         user.userId = response.data.userId;
     } catch (error) {

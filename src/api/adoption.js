@@ -20,8 +20,8 @@ export function getAdoptionList(params) {
     url: "/api/adoption/list",
     method: "GET",
     params: {
-      page: params.page || 1,
-      size: params.size || 6,
+      pageNum: params.pageNum || 1,
+      pageSize: params.pageSize || 6,
       area: params.area || "",
       petType: params.petType || "",
     },
@@ -43,9 +43,9 @@ export function getAdoptionById(id) {
 }
 
 //编辑领养信息
-export function putAdoptionDetail(data) {
+export function putAdoptionDetail(adoptionId, data) {
   return request({
-    url: `/api/adoption/update`,
+    url: `/api/adoption/update/${adoptionId}`,
     method: "PUT",
     data,
   });

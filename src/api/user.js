@@ -13,7 +13,7 @@ export function loginByEmail(email, password) {
 
 export function loginByPhone(phone, password) {
   return request({
-    url: "api/auth/login/phone",
+    url: "/api/auth/login/phone",
     method: "POST",
     data: {
       phone,
@@ -24,7 +24,7 @@ export function loginByPhone(phone, password) {
 
 export function loginByEmailCode(email, code) {
   return request({
-    url: "api/auth/login/email/code",
+    url: "/api/auth/login/email/code",
     method: "POST",
     data: {
       email,
@@ -35,7 +35,7 @@ export function loginByEmailCode(email, code) {
 
 export function sendVerifyCode(email) {
   return request({
-    url: "api/auth/login/email/code/send",
+    url: "/api/auth/login/email/code/send",
     method: "POST",
     data: {
       email,
@@ -65,7 +65,7 @@ export function updateUserInfo(userInfo) {
 //注册接口
 export function register(data) {
   return request({
-    url: "api/auth/register",
+    url: "/api/auth/register",
     method: "POST",
     data: data,
   });

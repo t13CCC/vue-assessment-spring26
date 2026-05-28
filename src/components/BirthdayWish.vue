@@ -39,8 +39,8 @@ const birthdayPet = ref(null);
 // 计算生日消息
 const birthdayMessage = computed(() => {
   if (!birthdayPet.value) return '';
-  const age = calculateAge(birthdayPet.value.birthday);
-  return `你的宠物${birthdayPet.value.name}今天${age}岁啦！`;
+  const age = calculateAge(birthdayPet.value.petBirthday || birthdayPet.value.birthday);
+  return `你的宠物${birthdayPet.value.petName || birthdayPet.value.name}今天${age}岁啦！`;
 });
 
 // 计算宠物年龄
@@ -65,13 +65,15 @@ function checkBirthdays() {
   const todayDay = today.getDate();
   
   const birthdayPets = props.pets.filter(pet => {
-    const [, month, day] = pet.birthday.split('-').map(Number);
+    const birthday = pet.petBirthday || pet.birthday;
+    if (!birthday) return false;
+    const [, month, day] = birthday.split('-').map(Number);
     return month === todayMonth && day === todayDay;
   });
   
   if (birthdayPets.length > 0) {
     // 按年龄排序，优先显示年龄最大的宠物
-    birthdayPets.sort((a, b) => calculateAge(b.birthday) - calculateAge(a.birthday));
+    birthdayPets.sort((a, b) => calculateAge(b.petBirthday || b.birthday) - calculateAge(a.petBirthday || a.birthday));
     birthdayPet.value = birthdayPets[0];
     
     // 检查是否在早上8点之后

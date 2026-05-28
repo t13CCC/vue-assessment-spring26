@@ -15,8 +15,8 @@
                     <div class="pet-select-container">
                         <select v-model="selectedPetId" @change="selectPet" required class="form-select">
                             <option value="">请从宠物档案中选择</option>
-                            <option v-for="pet in petArchive" :key="pet.id" :value="pet.id">
-                                {{ pet.name }} ({{ pet.type }})
+                            <option v-for="pet in petArchive" :key="pet.id" :value="pet.petId">
+                                {{ pet.petName }} ({{ pet.petType }})
                             </option>
                         </select>
                     </div>
@@ -25,13 +25,12 @@
                 <!-- 宠物信息展示 -->
                 <div v-if="selectedPet" class="pet-info-card">
                     <div class="pet-info-header">
-                        <img :src="selectedPet.image || '/src/assets/hero.png'" alt="宠物照片" class="pet-avatar">
+                        <img :src="selectedPet.petPhoto || '/src/assets/hero.png'" alt="宠物照片" class="pet-avatar">
                         <div class="pet-basic">
-                            <h3>{{ selectedPet.name }}</h3>
-                            <span class="pet-type-tag">{{ selectedPet.type }}</span>
+                            <h3>{{ selectedPet.petName }}</h3>
+                            <span class="pet-type-tag">{{ selectedPet.petType }}</span>
                         </div>
                     </div>
-                    <p class="pet-desc">已有描述：{{ selectedPet.description || '暂无描述' }}</p>
                 </div>
 
                 <!-- 宠物名称（只读） -->
@@ -113,7 +112,7 @@ const selectedPetId = ref('');
 
 // 选中的宠物信息
 const selectedPet = computed(() => {
-    return petArchive.value.find(pet => pet.id === parseInt(selectedPetId.value));
+    return petArchive.value.find(pet => pet.petId === selectedPetId.value);
 });
 
 const form = reactive({
@@ -129,12 +128,9 @@ const form = reactive({
 // 选择宠物
 const selectPet = () => {
     if (selectedPet.value) {
-        form.petName = selectedPet.value.name;
-        form.petType = selectedPet.value.type;
-        form.petPhoto = selectedPet.value.image || '';
-        if (selectedPet.value.description && !form.adoptionDesc) {
-            form.adoptionDesc = selectedPet.value.description;
-        }
+        form.petName = selectedPet.value.petName;
+        form.petType = selectedPet.value.petType;
+        form.petPhoto = selectedPet.value.petPhoto || '';
     } else {
         form.petName = '';
         form.petType = '';
@@ -150,7 +146,7 @@ const submitForm = async () => {
     }
 
     const adoptionData = {
-        petId: parseInt(selectedPetId.value),
+        petId: selectedPetId.value,
         petName: form.petName,
         petType: form.petType,
         adoptionDesc: form.adoptionDesc,

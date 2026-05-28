@@ -71,7 +71,7 @@ const handleRegister = async () => {
     try {
         const response = await register(data);
 
-        if (response.code === '200') {
+        if (response.code === '100000') {
             alert('注册成功！请登录');
             // 重置表单
             registerForm.account = '';

@@ -123,7 +123,6 @@ onMounted(async () => {
 // 提交表单
 const submitForm = async () => {
     const adoptionData = {
-        id: adoption.value.id,
         petId: adoption.value.petId,
         petName: form.petName,
         petType: form.petType,
@@ -135,7 +134,7 @@ const submitForm = async () => {
     };
 
     try {
-        const response = await putAdoptionDetail(adoptionData);
+        const response = await putAdoptionDetail(adoption.value.adoptionId, adoptionData);
         if (response.code === "100000") {
             alert('修改成功！');
             router.push('/adoption');

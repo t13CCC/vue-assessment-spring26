@@ -54,8 +54,8 @@ import { initSocket, onMessage, offMessage } from '@/utils/socket';
 const router = useRouter();
 const route = useRoute();
 
-// 当前用户
-const currentUserId = ref(1);
+// 当前用户（从登录信息获取）
+const currentUserId = ref(localStorage.getItem('userId') || '');
 const currentUserAvatar = ref('/src/assets/avator.png');
 
 // WebSocket 消息处理函数 - CHAT 类型（后端定义的消息类型）

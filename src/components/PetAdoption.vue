@@ -41,7 +41,7 @@
 
         <!-- 领养列表 -->
         <div v-else class="adoption-list">
-            <div v-for="item in adoptionList" :key="item.id" class="adoption-card">
+            <div v-for="item in adoptionList" :key="item.adoptionId" class="adoption-card">
                 <div class="card-image">
                     <img :src="item.petPhoto || '/src/assets/hero.png'" alt="宠物图片">
                 </div>
@@ -59,9 +59,9 @@
                     </div>
                     <div class="card-actions">
                         <button v-if="item.userId === currentUserId" class="action-btn edit-btn"
-                            @click="goToEdit(item.id)">编辑</button>
+                            @click="goToEdit(item.adoptionId)">编辑</button>
                         <button v-if="item.userId === currentUserId" class="action-btn delete-btn"
-                            @click="deleteAdoptionInfo(item.id)">删除</button>
+                            @click="deleteAdoptionInfo(item.adoptionId)">删除</button>
                         <button v-if="item.userId !== currentUserId" class="action-btn contact-btn"
                             @click="addFriend(item.userId)">加好友联系</button>
                     </div>
@@ -92,8 +92,8 @@ import { getAdoptionList, deleteAdoption } from '../api/adoption';
 
 const router = useRouter();
 
-// 当前用户ID（模拟登录用户）
-const currentUserId = ref(1);
+// 当前用户ID（从登录信息获取）
+const currentUserId = ref(localStorage.getItem('userId') || '');
 
 // 筛选条件
 const filterType = ref('');
@@ -126,8 +126,8 @@ const fetchAdoptionList = async () => {
 
     try {
         const params = {
-            page: currentPage.value,
-            size: pageSize.value,
+            pageNum: currentPage.value,
+            pageSize: pageSize.value,
             area: filterRegion.value || undefined,
             petType: filterType.value || undefined
         };
@@ -136,7 +136,7 @@ const fetchAdoptionList = async () => {
 
         if (response.code === '100000') {
             let data = response.data;
-            let records = data.records || [];
+            let records = data.data || [];
 
             // 按发布时间降序排序
             records.sort((a, b) => new Date(b.createTime) - new Date(a.createTime));

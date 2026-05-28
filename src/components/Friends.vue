@@ -66,6 +66,7 @@
             <div class="modal-content">
                 <h3>选择分组</h3>
                 <select v-model="selectedFriendGroup" class="modal-select">
+                    <option value="">未分组</option>
                     <option v-for="group in friendGroups" :key="group.id" :value="group.id">
                         {{ group.groupName }}
                     </option>
@@ -430,7 +431,9 @@ const createGroup = async () => {
     try {
         const res = await addFriendGroup(newGroupName.value.trim());
         if (res.code === '100000' && res.data) {
-            friendGroups.value.push(res.data);
+            // 后端返回的是分组ID(Long)，构造完整对象以便模板渲染
+            const newGroup = { id: res.data, groupName: newGroupName.value.trim() };
+            friendGroups.value.push(newGroup);
             newGroupName.value = '';
             showCreateGroupModal.value = false;
             alert('分组创建成功！');
