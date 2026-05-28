@@ -2,7 +2,7 @@ import request from "@/utils/request";
 
 export function loginByEmail(email, password) {
   return request({
-    url: "api/auth/login/email",
+    url: "/api/auth/login/email",
     method: "POST",
     data: {
       email,
@@ -43,10 +43,13 @@ export function sendVerifyCode(email) {
   });
 }
 
-export function getUserInfo() {
+export function getUserInfo(userId) {
   return request({
     url: "/api/user",
     method: "GET",
+    params: {
+      userId,
+    },
   });
 }
 

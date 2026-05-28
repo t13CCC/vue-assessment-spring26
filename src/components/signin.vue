@@ -124,7 +124,7 @@ watchEffect(() => {
 const emailLogin = async () => {
     try {
         const res = await loginByEmail(signinBack.username, signinBack.password);
-        if (res.code === "100000" ) {
+        if (res.code === "100000") {
             alert("登录成功！");
             emit('login-success', res.data);
 

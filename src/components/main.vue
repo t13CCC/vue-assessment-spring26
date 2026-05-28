@@ -52,7 +52,7 @@ import { useRouter } from 'vue-router';
 import EditProfile from './EditProfile.vue';
 import BirthdayWish from './BirthdayWish.vue';
 import Signin from './signin.vue';
-import {getUserInfo} from '@/api/user';
+import { getUserInfo } from '@/api/user';
 
 const router = useRouter();
 const showEditProfile = ref(false);
@@ -66,11 +66,15 @@ let user = reactive({
 });
 
 async function showInfo() {
+    const userId = localStorage.getItem('userId');
+    if (!userId) return;
     try {
-        const response = await getUserInfo();
-        user.name = response.data.nickname;
+        const response = await getUserInfo(userId);
+        user.name = response.data.name;
         user.avator = response.data.avatar;
+        user.userId = response.data.userId;
     } catch (error) {
+        console.error('获取用户信息失败:', error);
         alert('获取用户信息失败，请稍后重试');
     }
 }
@@ -116,10 +120,16 @@ const goToFile = () => {
 };
 
 // 登录成功后隐藏登录组件
-const handleLoginSuccess = () => {
+const handleLoginSuccess = (data) => {
     showSignin.value = false;
-    // 将登录状态保存到 localStorage
     localStorage.setItem('isLoggedIn', 'true');
+    if (data.token) {
+        localStorage.setItem('token', data.token);
+    }
+    if (data.userId) {
+        localStorage.setItem('userId', data.userId);
+    }
+    showInfo();
 };
 </script>
 
